@@ -52,7 +52,7 @@ impl<'a> Lexer<'a> {
                         literal: String::from(""),
                     }
                 } else if is_letter(self.ch) {
-                    let identifier = self.read_identifier();
+                    let identifier = self.read_until(&is_letter);
                     // Early return because read_identifier has read to
                     // end of the identifier and we don't want to call
                     // read_next_char again.
@@ -66,7 +66,14 @@ impl<'a> Lexer<'a> {
                             literal: identifier,
                         },
                     };
-                } else {
+                } else if is_digit(self.ch) {
+                    // Also an early return
+                    return Token {
+                        type_: Int,
+                        literal: self.read_until(&is_digit)
+                    }
+                }
+                else {
                     new_token(Illegal, self.ch)
                 }
             }
@@ -75,9 +82,14 @@ impl<'a> Lexer<'a> {
         token
     }
 
-    fn read_identifier(&mut self) -> String {
+    /// Read tokens until fn `is_type(ch) == false`
+    ///
+    /// Can be used to read letters w/ `is_letter() -> bool`
+    /// Can be used to read digits w/ `is_digit() -> bool`
+    ///
+    fn read_until(&mut self, is_type: &dyn Fn(u8) -> bool) -> String {
         let position = self.position;
-        while is_letter(self.ch) {
+        while is_type(self.ch) {
             self.read_next_char()
         }
         std::str::from_utf8(&self.input[position..self.position])
@@ -112,29 +124,65 @@ fn is_whitespace(ch: u8) -> bool {
     }
 }
 
+fn is_digit(ch: u8) -> bool {
+    let ch = ch as char;
+    '0' <= ch && ch <= '9'
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
 
     #[test]
     fn test() {
-        let input = "=+(){} ,;
-        let five = 5";
+        let input = "
+        let five = 5;
+        let ten = 10;
+        let add = fn(x, y) {
+            x + y;
+        };
+        let result = add(five, ten);
+        ";
 
         use TokenType::*;
         let valid = [
-            (Assign, "="),
-            (Plus, "+"),
-            (LParen, "("),
-            (RParen, ")"),
-            (LBrace, "{"),
-            (RBrace, "}"),
-            (Comma, ","),
-            (Semicolon, ";"),
             (Let, "let"),
             (Identifier, "five"),
             (Assign, "="),
-            (EOF, ""),
+            (Int, "5"),
+            (Semicolon, ";"),
+            (Let, "let"),
+            (Identifier, "ten"),
+            (Assign, "="),
+            (Int, "10"),
+            (Semicolon, ";"),
+            (Let, "let"),
+            (Identifier, "add"),
+            (Assign, "="),
+            (Function, "fn"),
+            (LParen, "("),
+            (Identifier, "x"),
+            (Comma, ","),
+            (Identifier, "y"),
+            (RParen, ")"),
+            (LBrace, "{"),
+            (Identifier, "x"),
+            (Plus, "+"),
+            (Identifier, "y"),
+            (Semicolon, ";"),
+            (RBrace, "}"),
+            (Semicolon, ";"),
+            (Let, "let"),
+            (Identifier, "result"),
+            (Assign, "="),
+            (Identifier, "add"),
+            (LParen, "("),
+            (Identifier, "five"),
+            (Comma, ","),
+            (Identifier, "ten"),
+            (RParen, ")"),
+            (Semicolon, ";"),
+            (EOF, "")
         ];
 
         let mut lex = Lexer::new(input);
