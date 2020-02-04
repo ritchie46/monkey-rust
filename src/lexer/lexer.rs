@@ -45,6 +45,12 @@ impl<'a> Lexer<'a> {
             '+' => new_token(Plus, self.ch),
             '{' => new_token(LBrace, self.ch),
             '}' => new_token(RBrace, self.ch),
+            '>' => new_token(GT, self.ch),
+            '<' => new_token(LT, self.ch),
+            '!' => new_token(Bang, self.ch),
+            '-' => new_token(Minus, self.ch),
+            '*' => new_token(Asterix, self.ch),
+            '/' => new_token(Slash, self.ch),
             _ => {
                 if self.ch == 0 {
                     Token {
@@ -70,10 +76,9 @@ impl<'a> Lexer<'a> {
                     // Also an early return
                     return Token {
                         type_: Int,
-                        literal: self.read_until(&is_digit)
-                    }
-                }
-                else {
+                        literal: self.read_until(&is_digit),
+                    };
+                } else {
                     new_token(Illegal, self.ch)
                 }
             }
@@ -142,6 +147,7 @@ mod test {
             x + y;
         };
         let result = add(five, ten);
+        !-/*<  >
         ";
 
         use TokenType::*;
@@ -182,7 +188,13 @@ mod test {
             (Identifier, "ten"),
             (RParen, ")"),
             (Semicolon, ";"),
-            (EOF, "")
+            (Bang, "!"),
+            (Minus, "-"),
+            (Slash, "/"),
+            (Asterix, "*"),
+            (LT, "<"),
+            (GT, ">"),
+            (EOF, ""),
         ];
 
         let mut lex = Lexer::new(input);
