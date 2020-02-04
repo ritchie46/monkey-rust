@@ -142,12 +142,9 @@ mod test {
     fn test() {
         let input = "
         let five = 5;
-        let ten = 10;
-        let add = fn(x, y) {
-            x + y;
+        add = fn(x) {
         };
-        let result = add(five, ten);
-        !-/*<  >
+        !-/*<  >,
         ";
 
         use TokenType::*;
@@ -157,36 +154,14 @@ mod test {
             (Assign, "="),
             (Int, "5"),
             (Semicolon, ";"),
-            (Let, "let"),
-            (Identifier, "ten"),
-            (Assign, "="),
-            (Int, "10"),
-            (Semicolon, ";"),
-            (Let, "let"),
             (Identifier, "add"),
             (Assign, "="),
             (Function, "fn"),
             (LParen, "("),
             (Identifier, "x"),
-            (Comma, ","),
-            (Identifier, "y"),
             (RParen, ")"),
             (LBrace, "{"),
-            (Identifier, "x"),
-            (Plus, "+"),
-            (Identifier, "y"),
-            (Semicolon, ";"),
             (RBrace, "}"),
-            (Semicolon, ";"),
-            (Let, "let"),
-            (Identifier, "result"),
-            (Assign, "="),
-            (Identifier, "add"),
-            (LParen, "("),
-            (Identifier, "five"),
-            (Comma, ","),
-            (Identifier, "ten"),
-            (RParen, ")"),
             (Semicolon, ";"),
             (Bang, "!"),
             (Minus, "-"),
@@ -194,6 +169,7 @@ mod test {
             (Asterix, "*"),
             (LT, "<"),
             (GT, ">"),
+            (Comma, ","),
             (EOF, ""),
         ];
 
