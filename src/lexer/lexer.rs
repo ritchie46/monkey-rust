@@ -145,6 +145,7 @@ mod test {
         add = fn(x) {
         };
         !-/*<  >,
+        return if else true false
         ";
 
         use TokenType::*;
@@ -170,6 +171,11 @@ mod test {
             (LT, "<"),
             (GT, ">"),
             (Comma, ","),
+            (Return, "return"),
+            (If, "if"),
+            (Else, "else"),
+            (True, "true"),
+            (False, "false"),
             (EOF, ""),
         ];
 
