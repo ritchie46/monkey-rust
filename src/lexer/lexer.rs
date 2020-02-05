@@ -37,20 +37,26 @@ impl<'a> Lexer<'a> {
 
         self.skip_whitespace();
         let token = match self.ch as char {
-            '=' => new_token(Assign, self.ch),
-            ';' => new_token(Semicolon, self.ch),
-            '(' => new_token(LParen, self.ch),
-            ')' => new_token(RParen, self.ch),
-            ',' => new_token(Comma, self.ch),
-            '+' => new_token(Plus, self.ch),
-            '{' => new_token(LBrace, self.ch),
-            '}' => new_token(RBrace, self.ch),
-            '>' => new_token(GT, self.ch),
-            '<' => new_token(LT, self.ch),
-            '!' => new_token(Bang, self.ch),
-            '-' => new_token(Minus, self.ch),
-            '*' => new_token(Asterix, self.ch),
-            '/' => new_token(Slash, self.ch),
+            '=' => {
+                if self.peak_next_char() == '=' {
+                    new_token(Equal, Literal::String("==".to_string()))
+                } else {
+                    new_token(Assign, Literal::Char(self.ch))
+                }
+            }
+            ';' => new_token(Semicolon, Literal::Char(self.ch)),
+            '(' => new_token(LParen, Literal::Char(self.ch)),
+            ')' => new_token(RParen, Literal::Char(self.ch)),
+            ',' => new_token(Comma, Literal::Char(self.ch)),
+            '+' => new_token(Plus, Literal::Char(self.ch)),
+            '{' => new_token(LBrace, Literal::Char(self.ch)),
+            '}' => new_token(RBrace, Literal::Char(self.ch)),
+            '>' => new_token(GT, Literal::Char(self.ch)),
+            '<' => new_token(LT, Literal::Char(self.ch)),
+            '!' => new_token(Bang, Literal::Char(self.ch)),
+            '-' => new_token(Minus, Literal::Char(self.ch)),
+            '*' => new_token(Asterix, Literal::Char(self.ch)),
+            '/' => new_token(Slash, Literal::Char(self.ch)),
             _ => {
                 if self.ch == 0 {
                     Token {
@@ -63,23 +69,19 @@ impl<'a> Lexer<'a> {
                     // end of the identifier and we don't want to call
                     // read_next_char again.
                     return match KEYWORDS.get(&identifier) {
-                        Some(keyword) => Token {
-                            type_: *keyword,
-                            literal: identifier,
-                        },
-                        _ => Token {
-                            type_: Identifier,
-                            literal: identifier,
-                        },
+                        Some(keyword) => {
+                            new_token(*keyword, Literal::String(identifier))
+                        }
+                        _ => new_token(Identifier, Literal::String(identifier)),
                     };
                 } else if is_digit(self.ch) {
                     // Also an early return
-                    return Token {
-                        type_: Int,
-                        literal: self.read_until(&is_digit),
-                    };
+                    return new_token(
+                        Int,
+                        Literal::String(self.read_until(&is_digit)),
+                    );
                 } else {
-                    new_token(Illegal, self.ch)
+                    new_token(Illegal, Literal::Char(self.ch))
                 }
             }
         };
@@ -106,12 +108,25 @@ impl<'a> Lexer<'a> {
             self.read_next_char()
         }
     }
+
+    fn peak_next_char(&mut self) -> char {
+        self.input[self.read_position()] as char
+    }
 }
 
-fn new_token(token_type: TokenType, ch: u8) -> Token {
+enum Literal {
+    Char(u8),
+    String(String),
+}
+
+fn new_token(token_type: TokenType, ch: Literal) -> Token {
+    let literal = match ch {
+        Literal::Char(ch) => std::str::from_utf8(&[ch]).unwrap().to_string(),
+        Literal::String(s) => s,
+    };
     Token {
         type_: token_type,
-        literal: std::str::from_utf8(&[ch]).unwrap().to_string(),
+        literal,
     }
 }
 
