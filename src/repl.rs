@@ -1,5 +1,5 @@
-use crate::lexer::lexer::Lexer;
-use crate::token::token::TokenType;
+use crate::lexer::Lexer;
+use crate::token::TokenType;
 use std::io;
 use std::io::Write;
 

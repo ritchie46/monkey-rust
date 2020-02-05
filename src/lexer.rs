@@ -1,4 +1,4 @@
-use crate::token::token::{Token, TokenType, KEYWORDS};
+use crate::token::{Token, TokenType, KEYWORDS};
 
 pub struct Lexer<'a> {
     input: &'a [u8],
@@ -38,7 +38,7 @@ impl<'a> Lexer<'a> {
         self.skip_whitespace();
         let token = match self.ch as char {
             '=' => {
-                if self.peak_next_char() as char == '=' {
+                if self.peek_next_char() as char == '=' {
                     self.read_next_char();
                     new_token(Equal, Literal::String("==".to_string()))
                 } else {
@@ -55,7 +55,7 @@ impl<'a> Lexer<'a> {
             '>' => new_token(GT, Literal::Char(self.ch)),
             '<' => new_token(LT, Literal::Char(self.ch)),
             '!' => {
-                if self.peak_next_char() as char == '=' {
+                if self.peek_next_char() as char == '=' {
                     self.read_next_char();
                     new_token(NotEqual, Literal::String("!=".to_string()))
                 } else {
@@ -114,7 +114,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn peak_next_char(&mut self) -> u8 {
+    fn peek_next_char(&mut self) -> u8 {
         if self.read_position() >= self.input.len() {
             0
         } else {

@@ -31,7 +31,7 @@ pub enum TokenType {
     NotEqual, // !=
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub type_: TokenType,
     pub literal: String,
