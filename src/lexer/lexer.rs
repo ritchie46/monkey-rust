@@ -1,13 +1,13 @@
 use crate::token::token::{Token, TokenType, KEYWORDS};
 
-struct Lexer<'a> {
+pub struct Lexer<'a> {
     input: &'a [u8],
     position: usize,
     ch: u8,
 }
 
 impl<'a> Lexer<'a> {
-    fn new(input: &str) -> Lexer {
+    pub fn new(input: &str) -> Lexer {
         let mut lex = Lexer {
             input: input.as_bytes(),
             position: 0,
@@ -32,7 +32,7 @@ impl<'a> Lexer<'a> {
         self.position = self.read_position()
     }
 
-    fn next_token(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Token {
         use TokenType::*;
 
         self.skip_whitespace();
