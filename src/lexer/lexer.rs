@@ -38,7 +38,8 @@ impl<'a> Lexer<'a> {
         self.skip_whitespace();
         let token = match self.ch as char {
             '=' => {
-                if self.peak_next_char() == '=' {
+                if self.peak_next_char() as char == '=' {
+                    self.read_next_char();
                     new_token(Equal, Literal::String("==".to_string()))
                 } else {
                     new_token(Assign, Literal::Char(self.ch))
@@ -53,16 +54,20 @@ impl<'a> Lexer<'a> {
             '}' => new_token(RBrace, Literal::Char(self.ch)),
             '>' => new_token(GT, Literal::Char(self.ch)),
             '<' => new_token(LT, Literal::Char(self.ch)),
-            '!' => new_token(Bang, Literal::Char(self.ch)),
+            '!' => {
+                if self.peak_next_char() as char == '=' {
+                    self.read_next_char();
+                    new_token(NotEqual, Literal::String("!=".to_string()))
+                } else {
+                    new_token(Bang, Literal::Char(self.ch))
+                }
+            }
             '-' => new_token(Minus, Literal::Char(self.ch)),
             '*' => new_token(Asterix, Literal::Char(self.ch)),
             '/' => new_token(Slash, Literal::Char(self.ch)),
             _ => {
                 if self.ch == 0 {
-                    Token {
-                        type_: EOF,
-                        literal: String::from(""),
-                    }
+                    new_token(EOF, Literal::String("".to_string()))
                 } else if is_letter(self.ch) {
                     let identifier = self.read_until(&is_letter);
                     // Early return because read_identifier has read to
@@ -109,8 +114,12 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn peak_next_char(&mut self) -> char {
-        self.input[self.read_position()] as char
+    fn peak_next_char(&mut self) -> u8 {
+        if self.read_position() >= self.input.len() {
+            0
+        } else {
+            self.input[self.read_position()]
+        }
     }
 }
 
@@ -161,6 +170,7 @@ mod test {
         };
         !-/*<  >,
         return if else true false
+        == !=
         ";
 
         use TokenType::*;
@@ -191,6 +201,8 @@ mod test {
             (Else, "else"),
             (True, "true"),
             (False, "false"),
+            (Equal, "=="),
+            (NotEqual, "!="),
             (EOF, ""),
         ];
 

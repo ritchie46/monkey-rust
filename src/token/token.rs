@@ -17,16 +17,18 @@ pub enum TokenType {
     RBrace,     // }
     Function,
     Let,
-    Bang,    // !
-    Asterix, // *
-    Slash,   // "/"
-    LT,      // <
-    GT,      // >
-    Return, // return
-    True, // true
-    False, // false
-    If, // if
-    Else, // else
+    Bang,     // !
+    Asterix,  // *
+    Slash,    // "/"
+    LT,       // <
+    GT,       // >
+    Return,   // return
+    True,     // true
+    False,    // false
+    If,       // if
+    Else,     // else
+    Equal,    // ==
+    NotEqual, // !=
 }
 
 #[derive(Debug, PartialEq)]
