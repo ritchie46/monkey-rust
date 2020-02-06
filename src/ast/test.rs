@@ -14,9 +14,17 @@ mod test {
     #[test]
     fn test_parser_errors() {
         let input = "let x;";
-        let parsed = parse_program(&input);
-
-        println!("{}", parsed.err().unwrap())
+        let parsed = parse_program(&input).unwrap_err();
+        match parsed {
+            ParserError::AssignmentExpected(_) => assert!(true),
+            _ => assert!(false)
+        }
+        let input = "let =";
+        let parsed = parse_program(&input).unwrap_err();
+        match parsed {
+            ParserError::IdentifierExpected => assert!(true),
+            _ => assert!(false)
+        }
     }
 
     #[test]
