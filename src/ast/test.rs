@@ -1,8 +1,7 @@
-
 #[cfg(test)]
 mod test {
-    use crate::lexer::Lexer;
     use crate::ast::ast::Parser;
+    use crate::lexer::Lexer;
 
     #[test]
     fn test_() {

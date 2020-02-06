@@ -19,9 +19,8 @@ trait Node {
 }
 
 #[derive(Debug)]
-struct Identifier {
-    token: Token,
-    value: String,
+enum Identifier {
+    Some,
 }
 
 #[derive(Debug)]
@@ -70,8 +69,7 @@ impl<'a> Parser<'a> {
         let mut program = Program { statements: vec![] };
 
         while self.current_token.type_ != TokenType::EOF {
-            let stmt = self
-                .parse_statement()?;
+            let stmt = self.parse_statement()?;
 
             program.statements.push(stmt);
             self.next_token();
@@ -80,16 +78,15 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_statement(&self) -> ParseResult<Statement> {
-        let tkn = self.current_token.clone();
-        let name = Identifier {
-            token: tkn.clone(),
-            value: "some".to_string(),
-        };
+        let tkn = &self.current_token;
 
-        Ok(Statement::Let(LetStatement {
-            token: tkn,
-            name,
-            value: Expression::Some,
-        }))
+        match tkn.type_ {
+            TokenType::Let => Ok(Statement::Let(LetStatement {
+                token: tkn.clone(),
+                value: Expression::Some,
+                name: Identifier::Some,
+            })),
+            _ => Err("hmm".to_string()),
+        }
     }
 }

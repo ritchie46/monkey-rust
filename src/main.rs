@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate lazy_static;
-pub mod token;
 mod lexer;
 mod repl;
+pub mod token;
 mod ast {
     mod ast;
     mod test;
