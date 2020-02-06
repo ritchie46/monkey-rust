@@ -102,6 +102,10 @@ impl<'a> Parser<'a> {
         self.current_token.type_ == t
     }
 
+    fn current_literal(&self) -> &str {
+        &self.current_token.literal
+    }
+
     fn parse_let_statement(&mut self) -> ParseResult<Statement> {
         if !self.expect_and_consume_token(TokenType::Identifier) {
             return Err(ParserError::IdentifierExpected);
@@ -109,7 +113,9 @@ impl<'a> Parser<'a> {
         let ident = Identifier::new(&self.current_token);
 
         if !self.expect_and_consume_token(TokenType::Assign) {
-            return Err(ParserError::AssignmentExpected);
+            return Err(ParserError::AssignmentExpected(
+                self.current_literal().to_string(),
+            ));
         }
 
         // TODO: Implement Expression. We skip for now
