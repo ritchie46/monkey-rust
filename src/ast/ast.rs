@@ -1,6 +1,7 @@
+use crate::ast::err::ParserError;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
-use crate::ast::err::ParserError;
+use std::string::ParseError;
 
 #[derive(Debug)]
 enum Statement {
@@ -19,8 +20,16 @@ trait Node {
 }
 
 #[derive(Debug)]
-enum Identifier {
-    Some,
+struct Identifier {
+    value: String,
+}
+
+impl Identifier {
+    fn new(tkn: &Token) -> Identifier {
+        Identifier {
+            value: tkn.literal.clone(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -77,7 +86,7 @@ impl<'a> Parser<'a> {
         Ok(program)
     }
 
-    fn parse_statement(&self) -> ParseResult<Statement> {
+    fn parse_statement(&mut self) -> ParseResult<Statement> {
         let tkn = &self.current_token;
 
         match tkn.type_ {
@@ -86,11 +95,24 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_let_statement(&self) -> ParseResult<Statement> {
+    fn expect_and_consume_token(&mut self, t: TokenType) -> bool {
+        if self.peek_token.type_ == t {
+            self.next_token();
+            true
+        } else {
+            false
+        }
+    }
+
+    fn parse_let_statement(&mut self) -> ParseResult<Statement> {
+        if self.expect_and_consume_token(TokenType::Identifier) {
+            return Err(ParserError::IdentifierExpected);
+        };
+        let ident = Identifier::new(&self.current_token);
         Ok(Statement::Let(LetStatement {
             token: self.current_token.clone(),
             value: Expression::Some,
-            name: Identifier::Some,
+            name: ident,
         }))
     }
 }

@@ -5,8 +5,8 @@ mod repl;
 pub mod token;
 mod ast {
     mod ast;
-    mod test;
     mod err;
+    mod test;
 }
 
 fn main() {

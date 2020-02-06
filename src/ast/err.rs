@@ -1,22 +1,30 @@
-use std::fmt;
 use std::error::Error;
-use std::hash::Hasher;
+use std::fmt;
 use std::fmt::Write;
-
+use std::hash::Hasher;
 
 #[derive(Debug)]
 pub enum ParserError {
-    CouldNotParse
+    CouldNotParse,
+    IdentifierExpected,
 }
 
 impl fmt::Display for ParserError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str("ParserError")
+        let s = match *self {
+            ParserError::IdentifierExpected => "IdentifierExpected",
+            _ => "ParserError",
+        };
+        f.write_str(s)
     }
 }
 
 impl Error for ParserError {
     fn description(&self) -> &str {
-        "Could not parse token"
+        let s = match *self {
+            ParserError::IdentifierExpected => "Expected a name after let",
+            _ => "Could not parse token",
+        };
+        s
     }
 }
