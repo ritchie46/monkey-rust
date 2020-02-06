@@ -1,13 +1,12 @@
 #[macro_use]
 extern crate lazy_static;
+mod ast;
+mod err;
 mod lexer;
+mod parser;
 mod repl;
-pub mod token;
-mod ast {
-    mod ast;
-    mod err;
-    mod test;
-}
+mod test;
+mod token;
 
 fn main() {
     println!(

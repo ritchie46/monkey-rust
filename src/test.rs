@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod test {
-    use crate::ast::ast::*;
-    use crate::ast::err::ParserError;
+    use crate::ast::*;
+    use crate::err::ParserError;
     use crate::lexer::Lexer;
+    use crate::parser::*;
     use std::io::ErrorKind;
 
     fn parse_program(input: &str) -> Result<Program, ParserError> {
@@ -17,14 +18,20 @@ mod test {
         let parsed = parse_program(&input).unwrap_err();
         match parsed {
             ParserError::AssignmentExpected(_) => assert!(true),
-            _ => assert!(false)
+            _ => assert!(false),
         }
         let input = "let =";
         let parsed = parse_program(&input).unwrap_err();
         match parsed {
             ParserError::IdentifierExpected => assert!(true),
-            _ => assert!(false)
+            _ => assert!(false),
         }
+    }
+
+    #[test]
+    fn test_precedence() {
+        assert!(Precedence::Lowest < Precedence::Equals);
+        assert!(Precedence::Prefix == Precedence::Prefix)
     }
 
     #[test]

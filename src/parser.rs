@@ -1,52 +1,19 @@
-use crate::ast::err::ParserError;
+use crate::ast::*;
+use crate::err::ParserError;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
-use std::string::ParseError;
-
-#[derive(Debug)]
-enum Statement {
-    Let(LetStatement),
-    Return(ReturnStatement)
-}
-
-#[derive(Debug)]
-enum Expression {
-    Some,
-}
 
 type ParseResult<T> = Result<T, ParserError>;
 
-trait Node {
-    fn token_literal(&self) -> String;
-}
-
-#[derive(Debug)]
-struct Identifier {
-    value: String,
-}
-
-impl Identifier {
-    fn new(tkn: &Token) -> Identifier {
-        Identifier {
-            value: tkn.literal.clone(),
-        }
-    }
-}
-
-#[derive(Debug)]
-struct LetStatement {
-    name: Identifier,
-    value: Expression,
-}
-
-#[derive(Debug)]
-struct ReturnStatement {
-    value: Expression,
-}
-
-#[derive(Debug)]
-pub struct Program {
-    statements: Vec<Statement>,
+#[derive(PartialOrd, PartialEq)]
+pub enum Precedence {
+    Lowest,
+    Equals,
+    LessGreater,
+    Sum,
+    Product,
+    Prefix,
+    Call,
 }
 
 pub struct Parser<'a> {
@@ -91,7 +58,7 @@ impl<'a> Parser<'a> {
         match tkn.type_ {
             TokenType::Let => self.parse_let_statement(),
             TokenType::Return => self.parse_return_statement(),
-            _ => Err(ParserError::CouldNotParse),
+            _ => self.parse_expression_statement(),
         }
     }
 
@@ -130,7 +97,7 @@ impl<'a> Parser<'a> {
             self.next_token()
         }
 
-        let stmt = Statement::Let(LetStatement {
+        let stmt = Statement::Let(LetStmt {
             value: Expression::Some,
             name: ident,
         });
@@ -144,10 +111,22 @@ impl<'a> Parser<'a> {
         while !self.current_token_eq(TokenType::Semicolon) {
             self.next_token()
         }
-        let stmt = Statement::Return(ReturnStatement{
-            value: Expression::Some
+        let stmt = Statement::Return(ReturnStmt {
+            value: Expression::Some,
         });
         Ok(stmt)
+    }
 
+    fn parse_expression_statement(&mut self) -> ParseResult<Statement> {
+        Err(ParserError::CouldNotParse)
+    }
+
+    fn parse_expression(&mut self, p: Precedence) -> Expression {
+        Expression::Some
+    }
+
+    fn parse_identifier(&mut self) -> Expression {
+        Identifier::new(&self.current_token);
+        Expression::Some
     }
 }
