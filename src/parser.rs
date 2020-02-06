@@ -4,6 +4,7 @@ use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 
 type ParseResult<T> = Result<T, ParserError>;
+type PrefixFn<'a> = fn(&mut Parser<'a>) -> ParseResult<Expression>;
 
 #[derive(PartialOrd, PartialEq)]
 pub enum Precedence {
@@ -32,6 +33,13 @@ impl<'a> Parser<'a> {
             peek_token: peek,
         };
         p
+    }
+
+    fn get_prefix_fn(&mut self, t: TokenType) -> PrefixFn {
+        match t {
+            TokenType::Identifier => Parser::parse_identifier,
+            _ => Parser::parse_identifier
+        }
     }
 
     fn next_token(&mut self) {
@@ -118,15 +126,24 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression_statement(&mut self) -> ParseResult<Statement> {
-        Err(ParserError::CouldNotParse)
+        let expr = match self.current_token.type_ {
+            TokenType::Identifier => self.parse_identifier()?,
+            _ => return Err(ParserError::CouldNotParse)
+        };
+        let stmt = Statement::Expr(ExpressionStmt{
+            value: expr
+        });
+        Ok(stmt)
+
     }
 
     fn parse_expression(&mut self, p: Precedence) -> Expression {
         Expression::Some
     }
 
-    fn parse_identifier(&mut self) -> Expression {
-        Identifier::new(&self.current_token);
-        Expression::Some
+    fn parse_identifier(&mut self) -> ParseResult<Expression> {
+        let ident = Identifier::new(&self.current_token);
+        let expr = Expression::Identifier(ident);
+        Ok(expr)
     }
 }
