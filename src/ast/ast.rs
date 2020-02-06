@@ -34,15 +34,8 @@ impl Identifier {
 
 #[derive(Debug)]
 struct LetStatement {
-    token: Token, // temporarely
     name: Identifier,
     value: Expression,
-}
-
-impl Node for LetStatement {
-    fn token_literal(&self) -> String {
-        self.token.literal.clone()
-    }
 }
 
 #[derive(Debug)]
@@ -105,12 +98,21 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_let_statement(&mut self) -> ParseResult<Statement> {
-        if self.expect_and_consume_token(TokenType::Identifier) {
+        if !self.expect_and_consume_token(TokenType::Identifier) {
             return Err(ParserError::IdentifierExpected);
         };
         let ident = Identifier::new(&self.current_token);
+
+        if !self.expect_and_consume_token(TokenType::Assign) {
+            return Err(ParserError::AssignmentExpected);
+        }
+
+        // TODO: Implement Expression. We skip for now
+        while self.current_token.type_ != TokenType::Semicolon {
+            self.next_token()
+        }
+
         Ok(Statement::Let(LetStatement {
-            token: self.current_token.clone(),
             value: Expression::Some,
             name: ident,
         }))
