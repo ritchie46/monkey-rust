@@ -1,73 +1,61 @@
-use crate::token::{Token, TokenType};
 use crate::lexer::Lexer;
+use crate::token::{Token, TokenType};
+use std::fmt::Error;
 
+#[derive(Debug)]
+enum Statement {
+    Let(LetStatement),
+}
+
+#[derive(Debug)]
+enum Expression {
+    Some,
+}
+
+type ParseResult<T> = Result<T, String>;
 
 trait Node {
     fn token_literal(&self) -> String;
 }
-trait Statement {
-    fn statement_node();
-}
 
-trait Expression {
-    fn expression_node();
-}
-
+#[derive(Debug)]
 struct Identifier {
     token: Token,
-    value: String
-}
-impl Identifier {
-    fn expresssion_ndoe() {}
+    value: String,
 }
 
-struct LetStatement<E>
-where E: Expression
-{
-    token: Token,
+#[derive(Debug)]
+struct LetStatement {
+    token: Token, // temporarely
     name: Identifier,
-    value: E
+    value: Expression,
 }
 
-impl <E>Statement for LetStatement<E>
-where E: Expression
-{
-    fn statement_node() {}
-}
-
-impl <T>Node for LetStatement<T>
-where T: Node + Expression
-{
+impl Node for LetStatement {
     fn token_literal(&self) -> String {
         self.token.literal.clone()
     }
 }
 
-
-struct Program<T>
-where T: Statement
-{
-    statements: Vec<T>
+#[derive(Debug)]
+pub struct Program {
+    statements: Vec<Statement>,
 }
 
-
-struct Parser<'a>
-{
+pub struct Parser<'a> {
     lex: &'a mut Lexer<'a>,
     current_token: Token,
-    peek_token: Token
+    peek_token: Token,
 }
-impl <'a>Parser<'a>
-{
-    fn new(lex: &'a mut Lexer<'a>) -> Parser<'a> {
-
+impl<'a> Parser<'a> {
+    pub fn new(lex: &'a mut Lexer<'a>) -> Parser<'a> {
         let current = lex.next_token();
         let peek = lex.next_token();
 
-        let p = Parser{
+        let p = Parser {
             lex,
             current_token: current,
-            peek_token: peek
+            peek_token: peek,
         };
         p
     }
@@ -78,19 +66,30 @@ impl <'a>Parser<'a>
         self.peek_token = self.lex.next_token();
     }
 
-    fn parse_program<T: Statement>(&mut self) -> Option<Program<T>> {
-//        let program = Program
-        None
-    }
+    pub fn parse_program(&mut self) -> Result<Program, String> {
+        let mut program = Program { statements: vec![] };
 
-    fn parse_statement(&self) {
-        match self.current_token.type_ {
-            TokenType::Let => self.parse_let_statement(),
-            _ => pass
+        while self.current_token.type_ != TokenType::EOF {
+            let stmt = self
+                .parse_statement()?;
+
+            program.statements.push(stmt);
+            self.next_token();
         }
+        Ok(program)
     }
 
-    fn parse_let_statement(&self) {
+    fn parse_statement(&self) -> ParseResult<Statement> {
+        let tkn = self.current_token.clone();
+        let name = Identifier {
+            token: tkn.clone(),
+            value: "some".to_string(),
+        };
 
+        Ok(Statement::Let(LetStatement {
+            token: tkn,
+            name,
+            value: Expression::Some,
+        }))
     }
 }
