@@ -1,4 +1,4 @@
-use crate::token::Token;
+use crate::token::{Token, TokenType};
 use crate::lexer::Lexer;
 
 
@@ -51,12 +51,14 @@ where T: Statement
 }
 
 
-struct Parser<'a> {
+struct Parser<'a>
+{
     lex: &'a mut Lexer<'a>,
     current_token: Token,
     peek_token: Token
 }
-impl <'a>Parser<'a> {
+impl <'a>Parser<'a>
+{
     fn new(lex: &'a mut Lexer<'a>) -> Parser<'a> {
 
         let current = lex.next_token();
@@ -71,7 +73,24 @@ impl <'a>Parser<'a> {
     }
 
     fn next_token(&mut self) {
+        // cannot reference because we replace peek
         self.current_token = self.peek_token.clone();
-        self.peek_token = self.lex.next_token().clone();
+        self.peek_token = self.lex.next_token();
+    }
+
+    fn parse_program<T: Statement>(&mut self) -> Option<Program<T>> {
+//        let program = Program
+        None
+    }
+
+    fn parse_statement(&self) {
+        match self.current_token.type_ {
+            TokenType::Let => self.parse_let_statement(),
+            _ => pass
+        }
+    }
+
+    fn parse_let_statement(&self) {
+
     }
 }

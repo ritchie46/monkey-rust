@@ -3,7 +3,10 @@ extern crate lazy_static;
 pub mod token;
 mod lexer;
 mod repl;
-mod ast;
+mod ast {
+    mod ast;
+    mod test;
+}
 
 fn main() {
     println!(
