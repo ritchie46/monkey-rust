@@ -6,6 +6,7 @@ pub mod token;
 mod ast {
     mod ast;
     mod test;
+    mod err;
 }
 
 fn main() {

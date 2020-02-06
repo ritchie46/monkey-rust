@@ -1,6 +1,6 @@
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
-use std::fmt::Error;
+use crate::ast::err::ParserError;
 
 #[derive(Debug)]
 enum Statement {
@@ -12,7 +12,7 @@ enum Expression {
     Some,
 }
 
-type ParseResult<T> = Result<T, String>;
+type ParseResult<T> = Result<T, ParserError>;
 
 trait Node {
     fn token_literal(&self) -> String;
@@ -65,7 +65,7 @@ impl<'a> Parser<'a> {
         self.peek_token = self.lex.next_token();
     }
 
-    pub fn parse_program(&mut self) -> Result<Program, String> {
+    pub fn parse_program(&mut self) -> Result<Program, ParserError> {
         let mut program = Program { statements: vec![] };
 
         while self.current_token.type_ != TokenType::EOF {
@@ -81,12 +81,16 @@ impl<'a> Parser<'a> {
         let tkn = &self.current_token;
 
         match tkn.type_ {
-            TokenType::Let => Ok(Statement::Let(LetStatement {
-                token: tkn.clone(),
-                value: Expression::Some,
-                name: Identifier::Some,
-            })),
-            _ => Err("hmm".to_string()),
+            TokenType::Let => self.parse_let_statement(),
+            _ => Err(ParserError::CouldNotParse),
         }
+    }
+
+    fn parse_let_statement(&self) -> ParseResult<Statement> {
+        Ok(Statement::Let(LetStatement {
+            token: self.current_token.clone(),
+            value: Expression::Some,
+            name: Identifier::Some,
+        }))
     }
 }
