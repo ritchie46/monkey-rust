@@ -6,6 +6,7 @@ use std::string::ParseError;
 #[derive(Debug)]
 enum Statement {
     Let(LetStatement),
+    Return(ReturnStatement)
 }
 
 #[derive(Debug)]
@@ -35,6 +36,11 @@ impl Identifier {
 #[derive(Debug)]
 struct LetStatement {
     name: Identifier,
+    value: Expression,
+}
+
+#[derive(Debug)]
+struct ReturnStatement {
     value: Expression,
 }
 
@@ -70,7 +76,7 @@ impl<'a> Parser<'a> {
     pub fn parse_program(&mut self) -> Result<Program, ParserError> {
         let mut program = Program { statements: vec![] };
 
-        while self.current_token.type_ != TokenType::EOF {
+        while !self.current_token_eq(TokenType::EOF) {
             let stmt = self.parse_statement()?;
 
             program.statements.push(stmt);
@@ -84,6 +90,7 @@ impl<'a> Parser<'a> {
 
         match tkn.type_ {
             TokenType::Let => self.parse_let_statement(),
+            TokenType::Return => self.parse_return_statement(),
             _ => Err(ParserError::CouldNotParse),
         }
     }
@@ -123,9 +130,24 @@ impl<'a> Parser<'a> {
             self.next_token()
         }
 
-        Ok(Statement::Let(LetStatement {
+        let stmt = Statement::Let(LetStatement {
             value: Expression::Some,
             name: ident,
-        }))
+        });
+        Ok(stmt)
+    }
+
+    fn parse_return_statement(&mut self) -> ParseResult<Statement> {
+        self.next_token();
+
+        // TODO: Implement Expression. We skip for now
+        while !self.current_token_eq(TokenType::Semicolon) {
+            self.next_token()
+        }
+        let stmt = Statement::Return(ReturnStatement{
+            value: Expression::Some
+        });
+        Ok(stmt)
+
     }
 }
