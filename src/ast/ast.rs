@@ -88,6 +88,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Check equality and if next token equal `t` consume one token.
     fn expect_and_consume_token(&mut self, t: TokenType) -> bool {
         if self.peek_token.type_ == t {
             self.next_token();
@@ -95,6 +96,10 @@ impl<'a> Parser<'a> {
         } else {
             false
         }
+    }
+    /// Check equality
+    fn current_token_eq(&self, t: TokenType) -> bool {
+        self.current_token.type_ == t
     }
 
     fn parse_let_statement(&mut self) -> ParseResult<Statement> {
@@ -108,7 +113,7 @@ impl<'a> Parser<'a> {
         }
 
         // TODO: Implement Expression. We skip for now
-        while self.current_token.type_ != TokenType::Semicolon {
+        while !self.current_token_eq(TokenType::Semicolon) {
             self.next_token()
         }
 
