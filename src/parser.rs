@@ -39,6 +39,8 @@ impl<'a> Parser<'a> {
         match self.current_token.type_ {
             TokenType::Identifier => self.parse_identifier(),
             TokenType::Int => self.parse_integer_literal(),
+            TokenType::Bang => self.parse_prefix_expression(),
+            TokenType::Minus => self.parse_prefix_expression(),
             _ => Err(ParserError::ParserNotExist),
         }
     }
@@ -157,6 +159,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_prefix_expression(&mut self) -> ParseResult<Expression> {
-        Err(ParserError::CouldNotParse)
+        let right_expr = self.parse_expression(Precedence::Prefix)?;
+        Expression::new_prefix_expr(&self.current_token, right_expr)
     }
 }

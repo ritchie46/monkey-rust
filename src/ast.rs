@@ -1,3 +1,4 @@
+use crate::ast::Statement::Expr;
 use crate::lexer::Lexer;
 use crate::parser::ParseResult;
 use crate::token::{Token, TokenType};
@@ -25,6 +26,7 @@ impl std::fmt::Display for Statement {
 pub enum Expression {
     Identifier(String),
     IntegerLiteral(i64),
+    Prefix(String, Box<Expression>), // operator ('!' || '-'), expression
     Some,
 }
 
@@ -36,6 +38,14 @@ impl Expression {
     pub fn new_integer_literal(tkn: &Token) -> ParseResult<Expression> {
         let lit = tkn.literal.parse::<i64>()?;
         Ok(Expression::IntegerLiteral(lit))
+    }
+
+    pub fn new_prefix_expr(
+        tkn: &Token,
+        e: Expression,
+    ) -> ParseResult<Expression> {
+        let operator = tkn.literal.to_string();
+        Ok(Expression::Prefix(operator, Box::new(e)))
     }
 }
 
