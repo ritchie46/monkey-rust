@@ -3,7 +3,7 @@ use crate::err::ParserError;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 
-type ParseResult<T> = Result<T, ParserError>;
+pub type ParseResult<T> = Result<T, ParserError>;
 type PrefixFn<'a> = fn(&mut Parser<'a>) -> ParseResult<Expression>;
 
 #[derive(PartialOrd, PartialEq)]
@@ -144,12 +144,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_identifier(&mut self) -> ParseResult<Expression> {
-        let expr = Expression::new_identifier(&self.current_token);
-        Ok(expr)
+        Expression::new_identifier(&self.current_token)
     }
 
     fn parse_integer_literal(&mut self) -> ParseResult<Expression> {
-        let expr = Expression::new_integer_literal(&self.current_token);
-        Ok(expr)
+        Expression::new_integer_literal(&self.current_token)
     }
 }

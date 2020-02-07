@@ -33,3 +33,9 @@ impl fmt::Display for ParserError {
         f.write_str(&s)
     }
 }
+
+impl From<std::num::ParseIntError> for ParserError {
+    fn from(error: std::num::ParseIntError) -> Self {
+        ParserError::CouldNotParse
+    }
+}

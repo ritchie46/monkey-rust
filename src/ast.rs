@@ -1,4 +1,5 @@
 use crate::lexer::Lexer;
+use crate::parser::ParseResult;
 use crate::token::{Token, TokenType};
 use std::fmt;
 
@@ -28,15 +29,13 @@ pub enum Expression {
 }
 
 impl Expression {
-    pub fn new_identifier(tkn: &Token) -> Expression {
-        Expression::Identifier(tkn.literal.to_string())
+    pub fn new_identifier(tkn: &Token) -> ParseResult<Expression> {
+        Ok(Expression::Identifier(tkn.literal.to_string()))
     }
 
-    pub fn new_integer_literal(tkn: &Token) -> Expression {
-        Expression::IntegerLiteral(tkn.literal.parse::<i64>().expect(&format!(
-            "Could not parse integer literal {}",
-            tkn.literal
-        )))
+    pub fn new_integer_literal(tkn: &Token) -> ParseResult<Expression> {
+        let lit = tkn.literal.parse::<i64>()?;
+        Ok(Expression::IntegerLiteral(lit))
     }
 }
 
