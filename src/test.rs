@@ -66,6 +66,13 @@ mod test {
         );
     }
 
+    fn test_operator_precedence_parsing(inputs: &[&str], outputs: &[&str]) {
+        for (input, output) in inputs.iter().zip(outputs) {
+            let parsed = parse_program(input).unwrap();
+            assert_eq!(format!("{}", parsed.statements[0]), *output)
+        }
+    }
+
     #[test]
     fn test_infix_expression() {
         let input = "-5 == 10;";
@@ -92,9 +99,13 @@ mod test {
             "(c > 6)",
             "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
         ];
-        for (input, output) in inputs.iter().zip(&outputs) {
-            let parsed = parse_program(input).unwrap();
-            assert_eq!(*output, format!("{}", parsed.statements[0]));
-        }
+        test_operator_precedence_parsing(&inputs, &outputs)
+    }
+
+    #[test]
+    fn test_bool_expression() {
+        let inputs = ["true", "false", "3 > 5 == false"];
+        let outputs = ["true", "false", "((3 > 5) == false)"];
+        test_operator_precedence_parsing(&inputs, &outputs)
     }
 }

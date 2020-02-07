@@ -79,6 +79,8 @@ impl<'a> Parser<'a> {
             TokenType::Int => self.parse_integer_literal(),
             TokenType::Bang => self.parse_prefix_expression(),
             TokenType::Minus => self.parse_prefix_expression(),
+            TokenType::True => self.parse_bool(),
+            TokenType::False => self.parse_bool(),
             _ => Err(ParserError::NoPrefixParser),
         }
     }
@@ -181,6 +183,8 @@ impl<'a> Parser<'a> {
         Ok(stmt)
     }
 
+    /// The heart of the parser
+    /// Read chapter 2.8 for an explanation.
     fn parse_expression_statement(&mut self) -> ParseResult<Statement> {
         let expr = self.parse_expression(Precedence::Lowest)?;
 
@@ -228,5 +232,9 @@ impl<'a> Parser<'a> {
         self.next_token();
         let right = self.parse_expression(prec)?;
         Expression::new_infix_expr(left, &operator_tkn, right)
+    }
+
+    fn parse_bool(&mut self) -> ParseResult<Expression> {
+        Ok(Expression::Bool(self.current_tkn_eq(TokenType::True)))
     }
 }

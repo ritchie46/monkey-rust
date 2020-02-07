@@ -26,6 +26,7 @@ pub enum Expression {
     IntegerLiteral(i64),
     Prefix(String, Box<Expression>), // operator ('!' || '-'), expression
     Infix(Box<Expression>, String, Box<Expression>), // left, operator, right ex. 5 + 5
+    Bool(bool),
     Some,
 }
 
@@ -36,6 +37,7 @@ impl fmt::Display for Expression {
             Expression::IntegerLiteral(int) => write!(f, "{}", int),
             Expression::Prefix(s, left) => write!(f, "{}{}", s, left),
             Expression::Infix(left, s, right) => write!(f, "({} {} {})", left, s, right),
+            Expression::Bool(b) => write!(f, "{}", b),
             _ => f.write_str("not impl"),
         }
     }
