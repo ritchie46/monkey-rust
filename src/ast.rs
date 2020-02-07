@@ -23,12 +23,20 @@ impl std::fmt::Display for Statement {
 #[derive(Debug, PartialOrd, PartialEq)]
 pub enum Expression {
     Identifier(String),
+    IntegerLiteral(i64),
     Some,
 }
 
 impl Expression {
     pub fn new_identifier(tkn: &Token) -> Expression {
         Expression::Identifier(tkn.literal.to_string())
+    }
+
+    pub fn new_integer_literal(tkn: &Token) -> Expression {
+        Expression::IntegerLiteral(tkn.literal.parse::<i64>().expect(&format!(
+            "Could not parse integer literal {}",
+            tkn.literal
+        )))
     }
 }
 

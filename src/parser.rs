@@ -129,6 +129,7 @@ impl<'a> Parser<'a> {
     fn parse_expression_statement(&mut self) -> ParseResult<Statement> {
         let expr = match self.current_token.type_ {
             TokenType::Identifier => self.parse_identifier()?,
+            TokenType::Int => self.parse_integer_literal()?,
             _ => return Err(ParserError::CouldNotParse),
         };
         if self.peek_tkn_eq(TokenType::Semicolon) {
@@ -144,6 +145,11 @@ impl<'a> Parser<'a> {
 
     fn parse_identifier(&mut self) -> ParseResult<Expression> {
         let expr = Expression::new_identifier(&self.current_token);
+        Ok(expr)
+    }
+
+    fn parse_integer_literal(&mut self) -> ParseResult<Expression> {
+        let expr = Expression::new_integer_literal(&self.current_token);
         Ok(expr)
     }
 }
