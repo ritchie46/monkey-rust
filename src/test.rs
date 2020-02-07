@@ -4,7 +4,6 @@ mod test {
     use crate::err::ParserError;
     use crate::lexer::Lexer;
     use crate::parser::*;
-    use std::io::ErrorKind;
 
     fn parse_program(input: &str) -> Result<Program, ParserError> {
         let mut lex = Lexer::new(&input);

@@ -1,4 +1,3 @@
-use crate::ast::Statement::Expr;
 use crate::ast::*;
 use crate::err::ParserError;
 use crate::lexer::Lexer;
@@ -36,10 +35,11 @@ impl<'a> Parser<'a> {
         p
     }
 
-    fn get_prefix_fn(&mut self, t: TokenType) -> PrefixFn {
-        match t {
-            TokenType::Identifier => Parser::parse_identifier,
-            _ => Parser::parse_identifier,
+    fn call_prefix_fn(&mut self) -> ParseResult<Expression> {
+        match self.current_token.type_ {
+            TokenType::Identifier => self.parse_identifier(),
+            TokenType::Int => self.parse_integer_literal(),
+            _ => Err(ParserError::ParserNotExist),
         }
     }
 
@@ -138,12 +138,14 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&mut self, p: Precedence) -> ParseResult<Expression> {
-        let expr = match self.current_token.type_ {
-            TokenType::Identifier => self.parse_identifier()?,
-            TokenType::Int => self.parse_integer_literal()?,
-            _ => return Err(ParserError::CouldNotParse),
+        let expr = self.call_prefix_fn();
+        let expr = match expr {
+            Err(ParserError::ParserNotExist) => None,
+            Err(e) => return Err(e),
+            Ok(e) => Some(e),
         };
-        Ok(expr)
+
+        Ok(expr.unwrap())
     }
 
     fn parse_identifier(&mut self) -> ParseResult<Expression> {

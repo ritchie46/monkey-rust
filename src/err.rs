@@ -7,6 +7,7 @@ pub enum ParserError {
     CouldNotParse,
     IdentifierExpected,
     AssignmentExpected(String),
+    ParserNotExist,
 }
 
 impl ParserError {
@@ -17,6 +18,7 @@ impl ParserError {
             ParserError::AssignmentExpected(s) => {
                 return format!("missing '=' after 'let {}...'", s.clone())
             }
+            _ => "",
         };
         s.to_string()
     }
