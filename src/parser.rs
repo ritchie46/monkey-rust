@@ -2,11 +2,11 @@ use crate::ast::*;
 use crate::err::ParserError;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
+use std::collections::{HashMap, HashSet};
 
 pub type ParseResult<T> = Result<T, ParserError>;
-type PrefixFn<'a> = fn(&mut Parser<'a>) -> ParseResult<Expression>;
 
-#[derive(PartialOrd, PartialEq)]
+#[derive(PartialOrd, PartialEq, Copy, Clone)]
 pub enum Precedence {
     Lowest,
     Equals,
@@ -15,6 +15,44 @@ pub enum Precedence {
     Product,
     Prefix,
     Call,
+}
+
+lazy_static! {
+    static ref TYPE2PREC: HashMap<TokenType, Precedence> = {
+        let mut m = HashMap::new();
+        m.insert(TokenType::Equal, Precedence::Equals);
+        m.insert(TokenType::NotEqual, Precedence::Equals);
+        m.insert(TokenType::LT, Precedence::LessGreater);
+        m.insert(TokenType::GT, Precedence::LessGreater);
+        m.insert(TokenType::Plus, Precedence::Sum);
+        m.insert(TokenType::Minus, Precedence::Sum);
+        m.insert(TokenType::Slash, Precedence::Product);
+        m.insert(TokenType::Asterix, Precedence::Product);
+        m
+    };
+    static ref INFIX_OPS: HashSet<TokenType> = {
+        let mut s = HashSet::new();
+        s.insert(TokenType::Plus);
+        s.insert(TokenType::Minus);
+        s.insert(TokenType::Slash);
+        s.insert(TokenType::Asterix);
+        s.insert(TokenType::Equal);
+        s.insert(TokenType::NotEqual);
+        s.insert(TokenType::LT);
+        s.insert(TokenType::GT);
+        s
+    };
+}
+
+/// Get precedence of next token
+fn peek_precedence(p: &Parser) -> Precedence {
+    let prec = TYPE2PREC.get(&p.peek_token.type_);
+    *prec.unwrap_or(&Precedence::Lowest)
+}
+
+fn current_precedence(p: &Parser) -> Precedence {
+    let prec = TYPE2PREC.get(&p.current_token.type_);
+    *prec.unwrap_or(&Precedence::Lowest)
 }
 
 pub struct Parser<'a> {
@@ -41,6 +79,20 @@ impl<'a> Parser<'a> {
             TokenType::Int => self.parse_integer_literal(),
             TokenType::Bang => self.parse_prefix_expression(),
             TokenType::Minus => self.parse_prefix_expression(),
+            _ => Err(ParserError::NoPrefixParser),
+        }
+    }
+
+    fn call_infix_fn(&mut self, left: Expression) -> ParseResult<Expression> {
+        match self.current_token.type_ {
+            TokenType::Plus => self.parse_infix_expression(left),
+            TokenType::Minus => self.parse_infix_expression(left),
+            TokenType::Slash => self.parse_infix_expression(left),
+            TokenType::Asterix => self.parse_infix_expression(left),
+            TokenType::Equal => self.parse_infix_expression(left),
+            TokenType::NotEqual => self.parse_infix_expression(left),
+            TokenType::LT => self.parse_infix_expression(left),
+            TokenType::GT => self.parse_infix_expression(left),
             _ => Err(ParserError::ParserNotExist),
         }
     }
@@ -139,15 +191,17 @@ impl<'a> Parser<'a> {
         Ok(stmt)
     }
 
-    fn parse_expression(&mut self, p: Precedence) -> ParseResult<Expression> {
-        let expr = self.call_prefix_fn();
-        let expr = match expr {
-            Err(ParserError::ParserNotExist) => None,
-            Err(e) => return Err(e),
-            Ok(e) => Some(e),
-        };
+    fn parse_expression(&mut self, prec: Precedence) -> ParseResult<Expression> {
+        let mut left = self.call_prefix_fn()?;
 
-        Ok(expr.unwrap())
+        while !self.peek_tkn_eq(TokenType::Semicolon) && prec < peek_precedence(&self) {
+            if INFIX_OPS.contains(&self.peek_token.type_) {
+                self.next_token();
+                left = self.call_infix_fn(left.clone())?;
+            }
+        }
+
+        Ok(left)
     }
 
     fn parse_identifier(&mut self) -> ParseResult<Expression> {
@@ -163,5 +217,16 @@ impl<'a> Parser<'a> {
         self.next_token();
         let right_expr = self.parse_expression(Precedence::Prefix)?;
         Expression::new_prefix_expr(&operator_tkn, right_expr)
+    }
+
+    /// Method gets called when already on infix operator
+    fn parse_infix_expression(&mut self, left: Expression) -> ParseResult<Expression> {
+        let prec = current_precedence(&self);
+        // infix tkn {+, -, /, * ... == }
+        let operator_tkn = self.current_token.clone();
+        // move to next expression
+        self.next_token();
+        let right = self.parse_expression(prec)?;
+        Expression::new_infix_expr(left, &operator_tkn, right)
     }
 }

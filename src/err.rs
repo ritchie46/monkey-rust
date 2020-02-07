@@ -8,6 +8,7 @@ pub enum ParserError {
     IdentifierExpected,
     AssignmentExpected(String),
     ParserNotExist,
+    NoPrefixParser,
 }
 
 impl ParserError {

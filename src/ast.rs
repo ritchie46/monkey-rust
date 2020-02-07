@@ -22,11 +22,12 @@ impl std::fmt::Display for Statement {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Expression {
     Identifier(String),
     IntegerLiteral(i64),
     Prefix(String, Box<Expression>), // operator ('!' || '-'), expression
+    Infix(Box<Expression>, String, Box<Expression>), // left, operator, right ex. 5 + 5
     Some,
 }
 
@@ -43,6 +44,15 @@ impl Expression {
     pub fn new_prefix_expr(tkn: &Token, e: Expression) -> ParseResult<Expression> {
         let operator = tkn.literal.to_string();
         Ok(Expression::Prefix(operator, Box::new(e)))
+    }
+
+    pub fn new_infix_expr(
+        left: Expression,
+        tkn: &Token,
+        right: Expression,
+    ) -> ParseResult<Expression> {
+        let operator = tkn.literal.to_string();
+        Ok(Expression::Infix(Box::new(left), operator, Box::new(right)))
     }
 }
 

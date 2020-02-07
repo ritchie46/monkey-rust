@@ -65,4 +65,19 @@ mod test {
             parsed.unwrap().statements[0]
         );
     }
+
+    #[test]
+    fn test_infix_expression() {
+        let input = "-5 == 10;";
+        let parsed = parse_program(&input);
+        let stmt = Statement::Expr(Expression::Infix(
+            Box::new(Expression::Prefix(
+                "-".to_string(),
+                Box::new(Expression::IntegerLiteral(5 as i64)),
+            )),
+            "==".to_string(),
+            Box::new(Expression::IntegerLiteral(10 as i64)),
+        ));
+        assert_eq!(stmt, parsed.unwrap().statements[0]);
+    }
 }
