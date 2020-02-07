@@ -1,10 +1,8 @@
-use crate::ast::Statement::Expr;
-use crate::lexer::Lexer;
 use crate::parser::ParseResult;
-use crate::token::{Token, TokenType};
+use crate::token::Token;
 use std::fmt;
 
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Statement {
     Let(String, Expression), // identifier, expr
     Return(Expression),
@@ -14,9 +12,9 @@ pub enum Statement {
 impl std::fmt::Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Statement::Let(id, exp) => {
-                write!(f, "Let stmt: ident: {}, expr: {:?}", id, exp)
-            }
+            Statement::Let(ident, _) => write!(f, "let {} = ", ident),
+            Statement::Return(e) => write!(f, "return {}", e),
+            Statement::Expr(e) => write!(f, "{}", e),
             _ => f.write_str("not implemented yet"),
         }
     }
@@ -29,6 +27,18 @@ pub enum Expression {
     Prefix(String, Box<Expression>), // operator ('!' || '-'), expression
     Infix(Box<Expression>, String, Box<Expression>), // left, operator, right ex. 5 + 5
     Some,
+}
+
+impl fmt::Display for Expression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Expression::Identifier(s) => write!(f, "{}", s),
+            Expression::IntegerLiteral(int) => write!(f, "{}", int),
+            Expression::Prefix(s, left) => write!(f, "{}{}", s, left),
+            Expression::Infix(left, s, right) => write!(f, "({} {} {})", left, s, right),
+            _ => f.write_str("not impl"),
+        }
+    }
 }
 
 impl Expression {

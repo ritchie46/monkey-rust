@@ -69,7 +69,7 @@ mod test {
     #[test]
     fn test_infix_expression() {
         let input = "-5 == 10;";
-        let parsed = parse_program(&input);
+        let parsed = parse_program(&input).unwrap();
         let stmt = Statement::Expr(Expression::Infix(
             Box::new(Expression::Prefix(
                 "-".to_string(),
@@ -78,6 +78,23 @@ mod test {
             "==".to_string(),
             Box::new(Expression::IntegerLiteral(10 as i64)),
         ));
-        assert_eq!(stmt, parsed.unwrap().statements[0]);
+        assert_eq!(stmt, parsed.statements[0]);
+
+        let inputs = [
+            "a + b * c + d / e - f",
+            "a != 10;",
+            "c > 6;",
+            "3 + 4 * 5 == 3 * 1 + 4 * 5",
+        ];
+        let outputs = [
+            "(((a + (b * c)) + (d / e)) - f)",
+            "(a != 10)",
+            "(c > 6)",
+            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+        ];
+        for (input, output) in inputs.iter().zip(&outputs) {
+            let parsed = parse_program(input).unwrap();
+            assert_eq!(*output, format!("{}", parsed.statements[0]));
+        }
     }
 }
