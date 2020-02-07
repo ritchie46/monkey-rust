@@ -1,3 +1,4 @@
+use crate::ast::Statement::Expr;
 use crate::ast::*;
 use crate::err::ParserError;
 use crate::lexer::Lexer;
@@ -127,20 +128,22 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression_statement(&mut self) -> ParseResult<Statement> {
+        let expr = self.parse_expression(Precedence::Lowest)?;
+
+        while self.peek_tkn_eq(TokenType::Semicolon) {
+            self.next_token()
+        }
+        let stmt = Statement::Expr(expr);
+        Ok(stmt)
+    }
+
+    fn parse_expression(&mut self, p: Precedence) -> ParseResult<Expression> {
         let expr = match self.current_token.type_ {
             TokenType::Identifier => self.parse_identifier()?,
             TokenType::Int => self.parse_integer_literal()?,
             _ => return Err(ParserError::CouldNotParse),
         };
-        if self.peek_tkn_eq(TokenType::Semicolon) {
-            self.next_token()
-        };
-        let stmt = Statement::Expr(expr);
-        Ok(stmt)
-    }
-
-    fn parse_expression(&mut self, p: Precedence) -> Expression {
-        Expression::Some
+        Ok(expr)
     }
 
     fn parse_identifier(&mut self) -> ParseResult<Expression> {
@@ -149,5 +152,9 @@ impl<'a> Parser<'a> {
 
     fn parse_integer_literal(&mut self) -> ParseResult<Expression> {
         Expression::new_integer_literal(&self.current_token)
+    }
+
+    fn parse_prefix_expression(&mut self) -> ParseResult<Expression> {
+        Err(ParserError::CouldNotParse)
     }
 }
