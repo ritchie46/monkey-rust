@@ -108,4 +108,11 @@ mod test {
         let outputs = ["true", "false", "((3 > 5) == false)"];
         test_operator_precedence_parsing(&inputs, &outputs)
     }
+
+    #[test]
+    fn test_grouped_expression() {
+        let inputs = ["1 + (2 + 3) + 4"];
+        let outputs = ["((1 + (2 + 3)) + 4)"];
+        test_operator_precedence_parsing(&inputs, &outputs)
+    }
 }

@@ -51,7 +51,7 @@ fn peek_precedence(p: &Parser) -> Precedence {
 }
 
 fn current_precedence(p: &Parser) -> Precedence {
-    let prec = TYPE2PREC.get(&p.current_token.type_);
+    let prec = TYPE2PREC.get(&p.current_type());
     *prec.unwrap_or(&Precedence::Lowest)
 }
 
@@ -74,19 +74,20 @@ impl<'a> Parser<'a> {
     }
 
     fn call_prefix_fn(&mut self) -> ParseResult<Expression> {
-        match self.current_token.type_ {
+        match self.current_type() {
             TokenType::Identifier => self.parse_identifier(),
             TokenType::Int => self.parse_integer_literal(),
             TokenType::Bang => self.parse_prefix_expression(),
             TokenType::Minus => self.parse_prefix_expression(),
             TokenType::True => self.parse_bool(),
             TokenType::False => self.parse_bool(),
-            _ => Err(ParserError::NoPrefixParser),
+            TokenType::LParen => self.parse_grouped_expression(),
+            _ => Err(ParserError::NoParserFor(self.current_type())),
         }
     }
 
     fn call_infix_fn(&mut self, left: Expression) -> ParseResult<Expression> {
-        match self.current_token.type_ {
+        match self.current_type() {
             TokenType::Plus => self.parse_infix_expression(left),
             TokenType::Minus => self.parse_infix_expression(left),
             TokenType::Slash => self.parse_infix_expression(left),
@@ -95,7 +96,7 @@ impl<'a> Parser<'a> {
             TokenType::NotEqual => self.parse_infix_expression(left),
             TokenType::LT => self.parse_infix_expression(left),
             TokenType::GT => self.parse_infix_expression(left),
-            _ => Err(ParserError::ParserNotExist),
+            _ => Err(ParserError::NoParserFor(self.current_type())),
         }
     }
 
@@ -103,6 +104,10 @@ impl<'a> Parser<'a> {
         // cannot reference because we replace peek
         self.current_token = self.peek_token.clone();
         self.peek_token = self.lex.next_token();
+    }
+
+    fn current_type(&self) -> TokenType {
+        self.current_token.type_
     }
 
     pub fn parse_program(&mut self) -> Result<Program, ParserError> {
@@ -236,5 +241,17 @@ impl<'a> Parser<'a> {
 
     fn parse_bool(&mut self) -> ParseResult<Expression> {
         Ok(Expression::Bool(self.current_tkn_eq(TokenType::True)))
+    }
+
+    fn parse_grouped_expression(&mut self) -> ParseResult<Expression> {
+        self.next_token();
+        let expr = self.parse_expression(Precedence::Lowest)?;
+
+        if !self.expect_and_consume_token(TokenType::RParen) {
+            return Err(ParserError::CouldNotParse(
+                "missing right paren ')'".to_string(),
+            ));
+        }
+        Ok(expr)
     }
 }

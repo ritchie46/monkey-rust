@@ -1,27 +1,26 @@
+use crate::token::TokenType;
 use std::error::Error;
 use std::fmt;
 use std::hash::Hasher;
 
 #[derive(Debug)]
 pub enum ParserError {
-    CouldNotParse,
+    CouldNotParse(String),
     IdentifierExpected,
     AssignmentExpected(String),
-    ParserNotExist,
-    NoPrefixParser,
+    NoParserFor(TokenType),
 }
 
 impl ParserError {
     pub fn as_str(&self) -> String {
-        let s = match self {
-            ParserError::CouldNotParse => "could not parse",
-            ParserError::IdentifierExpected => "missing identifier",
+        match self {
+            ParserError::CouldNotParse(s) => format!("could not parse: {}", s),
+            ParserError::IdentifierExpected => "missing identifier".to_string(),
             ParserError::AssignmentExpected(s) => {
-                return format!("missing '=' after 'let {}...'", s.clone())
+                format!("missing '=' after 'let {}...'", s)
             }
-            _ => "",
-        };
-        s.to_string()
+            _ => "".to_string(),
+        }
     }
 }
 
@@ -39,6 +38,6 @@ impl fmt::Display for ParserError {
 
 impl From<std::num::ParseIntError> for ParserError {
     fn from(error: std::num::ParseIntError) -> Self {
-        ParserError::CouldNotParse
+        ParserError::CouldNotParse("Integer".to_string())
     }
 }
