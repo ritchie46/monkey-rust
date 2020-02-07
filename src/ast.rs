@@ -40,10 +40,7 @@ impl Expression {
         Ok(Expression::IntegerLiteral(lit))
     }
 
-    pub fn new_prefix_expr(
-        tkn: &Token,
-        e: Expression,
-    ) -> ParseResult<Expression> {
+    pub fn new_prefix_expr(tkn: &Token, e: Expression) -> ParseResult<Expression> {
         let operator = tkn.literal.to_string();
         Ok(Expression::Prefix(operator, Box::new(e)))
     }

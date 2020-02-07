@@ -74,17 +74,12 @@ impl<'a> Lexer<'a> {
                     // end of the identifier and we don't want to call
                     // read_next_char again.
                     return match KEYWORDS.get(&identifier) {
-                        Some(keyword) => {
-                            new_token(*keyword, Literal::String(identifier))
-                        }
+                        Some(keyword) => new_token(*keyword, Literal::String(identifier)),
                         _ => new_token(Identifier, Literal::String(identifier)),
                     };
                 } else if is_digit(self.ch) {
                     // Also an early return
-                    return new_token(
-                        Int,
-                        Literal::String(self.read_until(&is_digit)),
-                    );
+                    return new_token(Int, Literal::String(self.read_until(&is_digit)));
                 } else {
                     new_token(Illegal, Literal::Char(self.ch))
                 }

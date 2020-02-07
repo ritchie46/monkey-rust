@@ -159,7 +159,9 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_prefix_expression(&mut self) -> ParseResult<Expression> {
+        let operator_tkn = self.current_token.clone();
+        self.next_token();
         let right_expr = self.parse_expression(Precedence::Prefix)?;
-        Expression::new_prefix_expr(&self.current_token, right_expr)
+        Expression::new_prefix_expr(&operator_tkn, right_expr)
     }
 }

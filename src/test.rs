@@ -52,4 +52,17 @@ mod test {
             parsed.unwrap().statements[0]
         );
     }
+
+    #[test]
+    fn test_prefix_expression() {
+        let input = "-5;";
+        let parsed = parse_program(&input);
+        assert_eq!(
+            Statement::Expr(Expression::Prefix(
+                "-".to_string(),
+                Box::new(Expression::IntegerLiteral(5 as i64))
+            )),
+            parsed.unwrap().statements[0]
+        );
+    }
 }
