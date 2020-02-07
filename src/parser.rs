@@ -113,7 +113,9 @@ impl<'a> Parser<'a> {
         self.next_token();
 
         // TODO: Implement Expression. We skip for now
-        while !self.current_token_eq(TokenType::Semicolon) {
+        while !self.current_token_eq(TokenType::Semicolon)
+            && !self.current_token_eq(TokenType::EOF)
+        {
             self.next_token()
         }
         let stmt = Statement::Return(Expression::Some);
