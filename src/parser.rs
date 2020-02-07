@@ -51,7 +51,7 @@ impl<'a> Parser<'a> {
     pub fn parse_program(&mut self) -> Result<Program, ParserError> {
         let mut program = Program { statements: vec![] };
 
-        while !self.current_token_eq(TokenType::EOF) {
+        while !self.current_tkn_eq(TokenType::EOF) {
             let stmt = self.parse_statement()?;
 
             program.statements.push(stmt);
@@ -80,8 +80,12 @@ impl<'a> Parser<'a> {
         }
     }
     /// Check equality
-    fn current_token_eq(&self, t: TokenType) -> bool {
-        self.current_token.type_ == t
+    fn current_tkn_eq(&self, tkn: TokenType) -> bool {
+        self.current_token.type_ == tkn
+    }
+
+    fn peek_tkn_eq(&self, tkn: TokenType) -> bool {
+        self.peek_token.type_ == tkn
     }
 
     fn current_literal(&self) -> &str {
@@ -101,7 +105,7 @@ impl<'a> Parser<'a> {
         }
 
         // TODO: Implement Expression. We skip for now
-        while !self.current_token_eq(TokenType::Semicolon) {
+        while !self.current_tkn_eq(TokenType::Semicolon) {
             self.next_token()
         }
 
@@ -113,8 +117,8 @@ impl<'a> Parser<'a> {
         self.next_token();
 
         // TODO: Implement Expression. We skip for now
-        while !self.current_token_eq(TokenType::Semicolon)
-            && !self.current_token_eq(TokenType::EOF)
+        while !self.current_tkn_eq(TokenType::Semicolon)
+            && !self.current_tkn_eq(TokenType::EOF)
         {
             self.next_token()
         }
@@ -126,6 +130,9 @@ impl<'a> Parser<'a> {
         let expr = match self.current_token.type_ {
             TokenType::Identifier => self.parse_identifier()?,
             _ => return Err(ParserError::CouldNotParse),
+        };
+        if self.peek_tkn_eq(TokenType::Semicolon) {
+            self.next_token()
         };
         let stmt = Statement::Expr(expr);
         Ok(stmt)

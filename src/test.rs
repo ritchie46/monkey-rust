@@ -35,12 +35,12 @@ mod test {
     }
 
     #[test]
-    fn test_() {
-        let input = "let x = 5;
-        let y = 10;
-        let foobar = 838383;";
+    fn test_identifier_expression() {
+        let input = "foobar;";
         let parsed = parse_program(&input);
-
-        println!("{:?}", parsed)
+        assert_eq!(
+            Statement::Expr(Expression::Identifier("foobar".to_string())),
+            parsed.unwrap().statements[0]
+        );
     }
 }
