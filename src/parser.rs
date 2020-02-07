@@ -38,7 +38,7 @@ impl<'a> Parser<'a> {
     fn get_prefix_fn(&mut self, t: TokenType) -> PrefixFn {
         match t {
             TokenType::Identifier => Parser::parse_identifier,
-            _ => Parser::parse_identifier
+            _ => Parser::parse_identifier,
         }
     }
 
@@ -92,7 +92,7 @@ impl<'a> Parser<'a> {
         if !self.expect_and_consume_token(TokenType::Identifier) {
             return Err(ParserError::IdentifierExpected);
         };
-        let ident = Identifier::new(&self.current_token);
+        let ident = self.current_literal().to_string();
 
         if !self.expect_and_consume_token(TokenType::Assign) {
             return Err(ParserError::AssignmentExpected(
@@ -105,10 +105,7 @@ impl<'a> Parser<'a> {
             self.next_token()
         }
 
-        let stmt = Statement::Let(LetStmt {
-            value: Expression::Some,
-            name: ident,
-        });
+        let stmt = Statement::Let(ident, Expression::Some);
         Ok(stmt)
     }
 
@@ -119,22 +116,17 @@ impl<'a> Parser<'a> {
         while !self.current_token_eq(TokenType::Semicolon) {
             self.next_token()
         }
-        let stmt = Statement::Return(ReturnStmt {
-            value: Expression::Some,
-        });
+        let stmt = Statement::Return(Expression::Some);
         Ok(stmt)
     }
 
     fn parse_expression_statement(&mut self) -> ParseResult<Statement> {
         let expr = match self.current_token.type_ {
             TokenType::Identifier => self.parse_identifier()?,
-            _ => return Err(ParserError::CouldNotParse)
+            _ => return Err(ParserError::CouldNotParse),
         };
-        let stmt = Statement::Expr(ExpressionStmt{
-            value: expr
-        });
+        let stmt = Statement::Expr(expr);
         Ok(stmt)
-
     }
 
     fn parse_expression(&mut self, p: Precedence) -> Expression {
@@ -142,8 +134,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_identifier(&mut self) -> ParseResult<Expression> {
-        let ident = Identifier::new(&self.current_token);
-        let expr = Expression::Identifier(ident);
+        let expr = Expression::new_identifier(&self.current_token);
         Ok(expr)
     }
 }

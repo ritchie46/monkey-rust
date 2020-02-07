@@ -3,44 +3,21 @@ use crate::token::{Token, TokenType};
 
 #[derive(Debug)]
 pub enum Statement {
-    Let(LetStmt),
-    Return(ReturnStmt),
-    Expr(ExpressionStmt),
+    Let(String, Expression), // identifier, expr
+    Return(Expression),
+    Expr(Expression),
 }
 
 #[derive(Debug)]
 pub enum Expression {
-    Identifier(Identifier),
+    Identifier(String),
     Some,
 }
 
-#[derive(Debug)]
-pub struct Identifier {
-    value: String,
-}
-
-impl Identifier {
-    pub fn new(tkn: &Token) -> Identifier {
-        Identifier {
-            value: tkn.literal.clone(),
-        }
+impl Expression {
+    pub fn new_identifier(tkn: &Token) -> Expression {
+        Expression::Identifier(tkn.literal.to_string())
     }
-}
-
-#[derive(Debug)]
-pub struct LetStmt {
-    pub name: Identifier,
-    pub value: Expression,
-}
-
-#[derive(Debug)]
-pub struct ReturnStmt {
-    pub value: Expression,
-}
-
-#[derive(Debug)]
-pub struct ExpressionStmt {
-    pub value: Expression,
 }
 
 #[derive(Debug)]
