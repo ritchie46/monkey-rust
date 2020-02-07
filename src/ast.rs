@@ -7,6 +7,7 @@ pub enum Statement {
     Let(String, Expression), // identifier, expr
     Return(Expression),
     Expr(Expression),
+    Block,
 }
 
 impl std::fmt::Display for Statement {
@@ -24,9 +25,21 @@ impl std::fmt::Display for Statement {
 pub enum Expression {
     Identifier(String),
     IntegerLiteral(i64),
-    Prefix(String, Box<Expression>), // operator ('!' || '-'), expression
-    Infix(Box<Expression>, String, Box<Expression>), // left, operator, right ex. 5 + 5
+    Prefix {
+        operator: String,
+        expr: Box<Expression>,
+    }, // operator ('!' || '-'), expression
+    Infix {
+        left: Box<Expression>,
+        operator: String,
+        right: Box<Expression>,
+    }, // left, operator, right ex. 5 + 5
     Bool(bool),
+    IfExpression {
+        condition: Box<Expression>,
+        consequence: Box<Statement>,
+        alternative: Box<Statement>,
+    },
     Some,
 }
 
@@ -35,8 +48,12 @@ impl fmt::Display for Expression {
         match self {
             Expression::Identifier(s) => write!(f, "{}", s),
             Expression::IntegerLiteral(int) => write!(f, "{}", int),
-            Expression::Prefix(s, left) => write!(f, "{}{}", s, left),
-            Expression::Infix(left, s, right) => write!(f, "({} {} {})", left, s, right),
+            Expression::Prefix { operator, expr } => write!(f, "{}{}", operator, expr),
+            Expression::Infix {
+                left,
+                operator,
+                right,
+            } => write!(f, "({} {} {})", left, operator, right),
             Expression::Bool(b) => write!(f, "{}", b),
             _ => f.write_str("not impl"),
         }
@@ -55,7 +72,10 @@ impl Expression {
 
     pub fn new_prefix_expr(tkn: &Token, e: Expression) -> ParseResult<Expression> {
         let operator = tkn.literal.to_string();
-        Ok(Expression::Prefix(operator, Box::new(e)))
+        Ok(Expression::Prefix {
+            operator,
+            expr: Box::new(e),
+        })
     }
 
     pub fn new_infix_expr(
@@ -64,7 +84,11 @@ impl Expression {
         right: Expression,
     ) -> ParseResult<Expression> {
         let operator = tkn.literal.to_string();
-        Ok(Expression::Infix(Box::new(left), operator, Box::new(right)))
+        Ok(Expression::Infix {
+            left: Box::new(left),
+            operator,
+            right: Box::new(right),
+        })
     }
 }
 
