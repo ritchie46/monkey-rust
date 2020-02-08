@@ -153,4 +153,24 @@ mod test {
         ];
         test_operator_precedence_parsing(&inputs, &outputs)
     }
+
+    #[test]
+    fn test_return_stmt() {
+        let input = "return add(9 * 6 + 3)";
+        let parsed = parse_program(&input);
+        assert_eq!(
+            "return add(((9 * 6) + 3))",
+            format!("{}", parsed.unwrap().statements[0])
+        );
+    }
+
+    #[test]
+    fn test_let_stmt() {
+        let input = "let foo = call(9 /3);";
+        let parsed = parse_program(&input);
+        assert_eq!(
+            "let foo = call((9 / 3));",
+            format!("{}", parsed.unwrap().statements[0])
+        );
+    }
 }

@@ -19,7 +19,7 @@ impl Statement {
 impl std::fmt::Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Statement::Let(ident, _) => write!(f, "let {} = ", ident),
+            Statement::Let(ident, e) => write!(f, "let {} = {};", ident, e),
             Statement::Return(e) => write!(f, "return {}", e),
             Statement::Expr(e) => write!(f, "{}", e),
             Statement::Block(stmts) => f.write_str(&write_block(stmts)),

@@ -170,26 +170,22 @@ impl<'a> Parser<'a> {
                 self.current_literal().to_string(),
             ));
         }
+        self.next_token();
 
-        // TODO: Implement Expression. We skip for now
-        while !self.current_tkn_eq(TokenType::Semicolon) {
-            self.next_token()
-        }
+        let value = self.parse_expression(Precedence::Lowest)?;
 
-        let stmt = Statement::Let(ident, Expression::Some);
+        let stmt = Statement::Let(ident, value);
+        self.expect_and_consume_token(TokenType::Semicolon);
+
         Ok(stmt)
     }
 
     fn parse_return_statement(&mut self) -> ParseResult<Statement> {
         self.next_token();
 
-        // TODO: Implement Expression. We skip for now
-        while !self.current_tkn_eq(TokenType::Semicolon)
-            && !self.current_tkn_eq(TokenType::EOF)
-        {
-            self.next_token()
-        }
-        let stmt = Statement::Return(Expression::Some);
+        let return_val = self.parse_expression(Precedence::Lowest)?;
+        self.expect_and_consume_token(TokenType::Semicolon);
+        let stmt = Statement::Return(return_val);
         Ok(stmt)
     }
 
