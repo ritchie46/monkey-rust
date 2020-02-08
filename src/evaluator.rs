@@ -15,6 +15,7 @@ fn eval_stmt(stmt: &Statement) -> Object {
 fn eval_expr(expr: &Expression) -> Object {
     match expr {
         Expression::IntegerLiteral(int) => Object::Int(*int),
+        Expression::Bool(b) => Object::Bool(*b),
         _ => Object::Null,
     }
 }

@@ -1,15 +1,17 @@
-#[cfg(test)]
-mod test {
-    use crate::ast::*;
-    use crate::err::ParserError;
-    use crate::lexer::Lexer;
-    use crate::parser::*;
+use crate::ast::*;
+use crate::err::ParserError;
+use crate::lexer::Lexer;
+use crate::parser::*;
 
-    fn parse_program(input: &str) -> Result<Program, ParserError> {
-        let mut lex = Lexer::new(&input);
-        let mut par = Parser::new(&mut lex);
-        par.parse_program()
-    }
+fn parse_program(input: &str) -> Result<Program, ParserError> {
+    let mut lex = Lexer::new(&input);
+    let mut par = Parser::new(&mut lex);
+    par.parse_program()
+}
+
+#[cfg(test)]
+mod parser_test {
+    use super::*;
 
     #[test]
     fn test_parser_errors() {
@@ -166,5 +168,29 @@ mod test {
             "let foo = call((9 / 3));",
             format!("{}", parsed.unwrap()[0])
         );
+    }
+}
+
+#[cfg(test)]
+mod eval_test {
+    use super::*;
+    use crate::evaluator::eval;
+    use crate::object::Object;
+
+    #[test]
+    fn test_int_eval() {
+        let input = "5";
+        let parsed = parse_program(&input);
+        let evaluated = eval(&parsed.unwrap());
+        assert_eq!(Object::Int(5), evaluated[0])
+    }
+
+    #[test]
+    fn test_bool_eval() {
+        for (input, output) in ["true", "false"].iter().zip(&[true, false]) {
+            let parsed = parse_program(&input);
+            let evaluated = eval(&parsed.unwrap());
+            assert_eq!(Object::Bool(*output), evaluated[0])
+        }
     }
 }
