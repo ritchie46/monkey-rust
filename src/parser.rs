@@ -116,12 +116,12 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_program(&mut self) -> Result<Program, ParserError> {
-        let mut program = Program { statements: vec![] };
+        let mut program: Program = vec![];
 
         while !self.current_tkn_eq(TokenType::EOF) {
             let stmt = self.parse_statement()?;
 
-            program.statements.push(stmt);
+            program.push(stmt);
             self.next_token();
         }
         Ok(program)

@@ -2,6 +2,8 @@ use crate::parser::ParseResult;
 use crate::token::Token;
 use std::fmt;
 
+pub type Program = Vec<Statement>;
+
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Statement {
     Let(String, Expression), // identifier, expr
@@ -49,7 +51,7 @@ pub enum Expression {
     },
     FunctionLiteral {
         args: Box<Vec<Expression>>, // expression::identifier
-        body: Box<Statement>,             // statement::block
+        body: Box<Statement>,       // statement::block
     },
     CallExpr {
         function: Box<Expression>,
@@ -81,9 +83,10 @@ impl fmt::Display for Expression {
                 consequence,
                 write_alternative_block(alternative)
             ),
-            Expression::FunctionLiteral { args: parameters, body } => {
-                f.write_str(&write_function_literal(parameters, body))
-            }
+            Expression::FunctionLiteral {
+                args: parameters,
+                body,
+            } => f.write_str(&write_function_literal(parameters, body)),
             Expression::CallExpr { function, args } => {
                 f.write_str(&write_call_expr(function, args))
             }
@@ -162,11 +165,6 @@ impl Expression {
         };
         Ok(expr)
     }
-}
-
-#[derive(Debug)]
-pub struct Program {
-    pub statements: Vec<Statement>,
 }
 
 // Helper functions for string formatting

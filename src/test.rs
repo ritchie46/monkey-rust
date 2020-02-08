@@ -39,7 +39,7 @@ mod test {
         let parsed = parse_program(&input);
         assert_eq!(
             Statement::Expr(Expression::Identifier("foobar".to_string())),
-            parsed.unwrap().statements[0]
+            parsed.unwrap()[0]
         );
     }
 
@@ -49,7 +49,7 @@ mod test {
         let parsed = parse_program(&input);
         assert_eq!(
             Statement::Expr(Expression::IntegerLiteral(5 as i64)),
-            parsed.unwrap().statements[0]
+            parsed.unwrap()[0]
         );
     }
 
@@ -62,14 +62,14 @@ mod test {
                 operator: "-".to_string(),
                 expr: Box::new(Expression::IntegerLiteral(5 as i64))
             }),
-            parsed.unwrap().statements[0]
+            parsed.unwrap()[0]
         );
     }
 
     fn test_operator_precedence_parsing(inputs: &[&str], outputs: &[&str]) {
         for (input, output) in inputs.iter().zip(outputs) {
             let parsed = parse_program(input).unwrap();
-            assert_eq!(format!("{}", parsed.statements[0]), *output)
+            assert_eq!(format!("{}", parsed[0]), *output)
         }
     }
 
@@ -112,14 +112,14 @@ mod test {
         let parsed = parse_program(&input);
         assert_eq!(
             "if (x < y) { x } else { pass }",
-            format!("{}", parsed.unwrap().statements[0])
+            format!("{}", parsed.unwrap()[0])
         );
 
         let input = "if (x < y) { x } else { y }";
         let parsed = parse_program(&input);
         assert_eq!(
             "if (x < y) { x } else { y }",
-            format!("{}", parsed.unwrap().statements[0])
+            format!("{}", parsed.unwrap()[0])
         );
     }
 
@@ -127,16 +127,10 @@ mod test {
     fn test_function_literal() {
         let input = "fn(a, b) { a * b }";
         let parsed = parse_program(&input);
-        assert_eq!(
-            "fn(a, b) { (a * b) }",
-            format!("{}", parsed.unwrap().statements[0])
-        );
+        assert_eq!("fn(a, b) { (a * b) }", format!("{}", parsed.unwrap()[0]));
         let input = "fn(x, y, z) {}";
         let parsed = parse_program(&input);
-        assert_eq!(
-            "fn(x, y, z) {  }",
-            format!("{}", parsed.unwrap().statements[0])
-        );
+        assert_eq!("fn(x, y, z) {  }", format!("{}", parsed.unwrap()[0]));
     }
 
     #[test]
@@ -160,7 +154,7 @@ mod test {
         let parsed = parse_program(&input);
         assert_eq!(
             "return add(((9 * 6) + 3))",
-            format!("{}", parsed.unwrap().statements[0])
+            format!("{}", parsed.unwrap()[0])
         );
     }
 
@@ -170,7 +164,7 @@ mod test {
         let parsed = parse_program(&input);
         assert_eq!(
             "let foo = call((9 / 3));",
-            format!("{}", parsed.unwrap().statements[0])
+            format!("{}", parsed.unwrap()[0])
         );
     }
 }
