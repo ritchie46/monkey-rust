@@ -57,21 +57,21 @@ fn eval_prefix_expr(operator: &str, right: &Object) -> Object {
     match operator {
         "!" => eval_bang_operator_expr(right),
         "-" => eval_minus_prefix_expr(right),
-        _ => Object::Null,
+        _ => Object::new_error(&format!("unknown operator: {} {}", operator, right)),
     }
 }
 
 fn eval_bang_operator_expr(right: &Object) -> Object {
     match right {
         Object::Bool(b) => Object::Bool(!*b),
-        _ => Object::Null,
+        _ => Object::new_error(&format!("unknown operator: !{}", right.get_type())),
     }
 }
 
 fn eval_minus_prefix_expr(right: &Object) -> Object {
     match right {
         Object::Int(int) => Object::Int(-*int),
-        _ => Object::Null,
+        _ => Object::new_error(&format!("unknown operator: -{}", right.get_type())),
     }
 }
 
@@ -79,7 +79,12 @@ fn eval_infix_expr(operator: &str, left: &Object, right: &Object) -> Object {
     match (left, right) {
         (Object::Int(l), Object::Int(r)) => eval_int_infix_expr(operator, *l, *r),
         (Object::Bool(l), Object::Bool(r)) => eval_bool_infix_expr(operator, *l, *r),
-        _ => Object::Null,
+        _ => Object::new_error(&format!(
+            "type mismatch: {} {} {}",
+            left.get_type(),
+            operator,
+            right.get_type()
+        )),
     }
 }
 
@@ -93,7 +98,7 @@ fn eval_int_infix_expr(operator: &str, left: i64, right: i64) -> Object {
         ">" => Object::Bool(left > right),
         "==" => Object::Bool(left == right),
         "!=" => Object::Bool(left != right),
-        _ => Object::Null,
+        op => Object::new_error(&format!("unkown operator: int {} int", op)),
     }
 }
 
@@ -101,7 +106,7 @@ fn eval_bool_infix_expr(operator: &str, left: bool, right: bool) -> Object {
     match operator {
         "==" => Object::Bool(left == right),
         "!=" => Object::Bool(left != right),
-        _ => Object::Null,
+        op => Object::new_error(&format!("unknown operator: bool {} bool", op)),
     }
 }
 

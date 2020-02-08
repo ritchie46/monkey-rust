@@ -86,7 +86,8 @@ impl<'a> Parser<'a> {
             TokenType::LParen => self.parse_grouped_expr(),
             TokenType::If => self.parse_if_expr(),
             TokenType::Function => self.parse_function_literal(),
-            _ => Err(ParserError::NoParserFor(self.current_type())),
+            // Try to parse it and let evaluator define errors.
+            _ => self.parse_prefix_expr(),
         }
     }
 
@@ -101,7 +102,8 @@ impl<'a> Parser<'a> {
             TokenType::LT => self.parse_infix_expr(left),
             TokenType::GT => self.parse_infix_expr(left),
             TokenType::LParen => self.parse_call_expr(left), // left is fn
-            _ => Err(ParserError::NoParserFor(self.current_type())),
+            // Try to parse it and let evaluator define errors.
+            _ => self.parse_infix_expr(left),
         }
     }
 
