@@ -28,14 +28,6 @@ impl std::fmt::Display for Statement {
     }
 }
 
-fn write_block(stmts: &Vec<Statement>) -> String {
-    let mut s = String::new();
-    for b in stmts {
-        s.push_str(&format!("{}", b))
-    }
-    s
-}
-
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
 pub enum Expression {
     Identifier(String),
@@ -54,6 +46,10 @@ pub enum Expression {
         condition: Box<Expression>,
         consequence: Box<Statement>,
         alternative: Option<Box<Statement>>,
+    },
+    FunctionLiteral {
+        parameters: Box<Vec<Expression>>, // expression::identifier
+        body: Box<Statement>,             // statement::block
     },
     Some,
 }
@@ -81,15 +77,11 @@ impl fmt::Display for Expression {
                 consequence,
                 write_alternative_block(alternative)
             ),
+            Expression::FunctionLiteral { parameters, body } => {
+                f.write_str(&write_function_literal(parameters, body))
+            }
             _ => f.write_str("not impl"),
         }
-    }
-}
-
-fn write_alternative_block(alt: &Option<Box<Statement>>) -> String {
-    match alt {
-        Some(s) => format!("{}", s),
-        None => "pass".to_string(),
     }
 }
 
@@ -141,9 +133,51 @@ impl Expression {
         };
         Ok(expr)
     }
+
+    pub fn new_function_literal(
+        params: Vec<Expression>,
+        body: Statement,
+    ) -> ParseResult<Expression> {
+        let expr = Expression::FunctionLiteral {
+            parameters: Box::new(params),
+            body: Box::new(body),
+        };
+        Ok(expr)
+    }
 }
 
 #[derive(Debug)]
 pub struct Program {
     pub statements: Vec<Statement>,
+}
+
+// Helper functions for string formatting
+
+fn write_block(stmts: &Vec<Statement>) -> String {
+    let mut s = String::new();
+    for b in stmts {
+        s.push_str(&format!("{}", b))
+    }
+    s
+}
+
+fn write_alternative_block(alt: &Option<Box<Statement>>) -> String {
+    match alt {
+        Some(s) => format!("{}", s),
+        None => "pass".to_string(),
+    }
+}
+
+fn write_function_literal(parameters: &Vec<Expression>, body: &Statement) -> String {
+    let mut s = "fn(".to_string();
+    for (i, p) in parameters.iter().enumerate() {
+        if i == 0 {
+            s.push_str(&format!("{}", p))
+        } else {
+            s.push_str(&format!(", {}", p))
+        }
+    }
+    s.push_str(&format!(") {{ {} }}", body));
+
+    s
 }

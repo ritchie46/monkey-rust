@@ -83,6 +83,7 @@ impl<'a> Parser<'a> {
             TokenType::False => self.parse_bool(),
             TokenType::LParen => self.parse_grouped_expression(),
             TokenType::If => self.parse_if_expression(),
+            TokenType::Function => self.parse_function_literal(),
             _ => Err(ParserError::NoParserFor(self.current_type())),
         }
     }
@@ -306,5 +307,52 @@ impl<'a> Parser<'a> {
             self.next_token();
         }
         Statement::new_block(stmts)
+    }
+
+    fn parse_function_literal(&mut self) -> ParseResult<Expression> {
+        if !self.expect_and_consume_token(TokenType::LParen) {
+            return Err(ParserError::CouldNotParse(
+                "missing left paren '('".to_string(),
+            ));
+        }
+        let params = self.parse_function_params()?;
+
+        if !self.expect_and_consume_token(TokenType::LBrace) {
+            return Err(ParserError::CouldNotParse(
+                "missing left brace '{'".to_string(),
+            ));
+        }
+        let body = self.parse_block_stmt()?;
+
+        Expression::new_function_literal(params, body)
+    }
+
+    fn parse_function_params(&mut self) -> ParseResult<Vec<Expression>> {
+        let mut identifiers: Vec<Expression> = vec![];
+
+        if self.peek_tkn_eq(TokenType::RParen) {
+            self.next_token();
+            // return empty params vector
+            return Ok(identifiers);
+        }
+        self.next_token();
+
+        let ident = Expression::new_identifier(&self.current_token)?;
+        identifiers.push(ident);
+
+        while self.peek_tkn_eq(TokenType::Comma) {
+            // skip comma
+            self.next_token();
+            self.next_token();
+            let ident = Expression::new_identifier(&self.current_token)?;
+            identifiers.push(ident);
+        }
+
+        if !self.expect_and_consume_token(TokenType::RParen) {
+            return Err(ParserError::CouldNotParse(
+                "missing right paren ')'".to_string(),
+            ));
+        }
+        Ok(identifiers)
     }
 }

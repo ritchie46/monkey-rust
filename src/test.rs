@@ -122,4 +122,20 @@ mod test {
             format!("{}", parsed.unwrap().statements[0])
         );
     }
+
+    #[test]
+    fn test_function_literal() {
+        let input = "fn(a, b) { a * b }";
+        let parsed = parse_program(&input);
+        assert_eq!(
+            "fn(a, b) { (a * b) }",
+            format!("{}", parsed.unwrap().statements[0])
+        );
+        let input = "fn(x, y, z) {}";
+        let parsed = parse_program(&input);
+        assert_eq!(
+            "fn(x, y, z) {  }",
+            format!("{}", parsed.unwrap().statements[0])
+        );
+    }
 }
