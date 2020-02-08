@@ -204,5 +204,9 @@ mod eval_test {
             let ev = evaluated(&input);
             assert_eq!(Object::Bool(*output), ev)
         }
+        for (input, output) in ["-5", "--5"].iter().zip(&[-5, 5]) {
+            let ev = evaluated(&input);
+            assert_eq!(Object::Int(*output), ev)
+        }
     }
 }

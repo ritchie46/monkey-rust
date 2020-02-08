@@ -27,6 +27,7 @@ fn eval_expr(expr: &Expression) -> Object {
 fn eval_prefix_expr(operator: &str, right: &Object) -> Object {
     match operator {
         "!" => eval_bang_operator_expr(right),
+        "-" => eval_minus_prefix_expr(right),
         _ => Object::Null,
     }
 }
@@ -34,6 +35,13 @@ fn eval_prefix_expr(operator: &str, right: &Object) -> Object {
 fn eval_bang_operator_expr(right: &Object) -> Object {
     match right {
         Object::Bool(b) => Object::Bool(!*b),
+        _ => Object::Null,
+    }
+}
+
+fn eval_minus_prefix_expr(right: &Object) -> Object {
+    match right {
+        Object::Int(int) => Object::Int(-*int),
         _ => Object::Null,
     }
 }
