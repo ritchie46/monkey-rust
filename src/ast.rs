@@ -48,7 +48,7 @@ pub enum Expression {
         alternative: Option<Box<Statement>>,
     },
     FunctionLiteral {
-        parameters: Box<Vec<Expression>>, // expression::identifier
+        args: Box<Vec<Expression>>, // expression::identifier
         body: Box<Statement>,             // statement::block
     },
     CallExpr {
@@ -81,7 +81,7 @@ impl fmt::Display for Expression {
                 consequence,
                 write_alternative_block(alternative)
             ),
-            Expression::FunctionLiteral { parameters, body } => {
+            Expression::FunctionLiteral { args: parameters, body } => {
                 f.write_str(&write_function_literal(parameters, body))
             }
             Expression::CallExpr { function, args } => {
@@ -146,7 +146,7 @@ impl Expression {
         body: Statement,
     ) -> ParseResult<Expression> {
         let expr = Expression::FunctionLiteral {
-            parameters: Box::new(params),
+            args: Box::new(params),
             body: Box::new(body),
         };
         Ok(expr)
@@ -186,7 +186,7 @@ fn write_alternative_block(alt: &Option<Box<Statement>>) -> String {
     }
 }
 
-fn format_comma_seperated_args(s: &mut String, args: &Vec<Expression>) {
+fn format_comma_separated_args(s: &mut String, args: &Vec<Expression>) {
     for (i, p) in args.iter().enumerate() {
         if i == 0 {
             s.push_str(&format!("{}", p))
@@ -198,14 +198,14 @@ fn format_comma_seperated_args(s: &mut String, args: &Vec<Expression>) {
 
 fn write_function_literal(parameters: &Vec<Expression>, body: &Statement) -> String {
     let mut s = "fn(".to_string();
-    format_comma_seperated_args(&mut s, parameters);
+    format_comma_separated_args(&mut s, parameters);
     s.push_str(&format!(") {{ {} }}", body));
     s
 }
 
 fn write_call_expr(function: &Expression, args: &Vec<Expression>) -> String {
     let mut s = format!("{}(", function);
-    format_comma_seperated_args(&mut s, args);
+    format_comma_separated_args(&mut s, args);
     s.push(')');
     s
 }

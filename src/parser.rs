@@ -79,12 +79,12 @@ impl<'a> Parser<'a> {
         match self.current_type() {
             TokenType::Identifier => self.parse_identifier(),
             TokenType::Int => self.parse_integer_literal(),
-            TokenType::Bang => self.parse_prefix_expression(),
-            TokenType::Minus => self.parse_prefix_expression(),
+            TokenType::Bang => self.parse_prefix_expr(),
+            TokenType::Minus => self.parse_prefix_expr(),
             TokenType::True => self.parse_bool(),
             TokenType::False => self.parse_bool(),
-            TokenType::LParen => self.parse_grouped_expression(),
-            TokenType::If => self.parse_if_expression(),
+            TokenType::LParen => self.parse_grouped_expr(),
+            TokenType::If => self.parse_if_expr(),
             TokenType::Function => self.parse_function_literal(),
             _ => Err(ParserError::NoParserFor(self.current_type())),
         }
@@ -92,15 +92,15 @@ impl<'a> Parser<'a> {
 
     fn call_infix_fn(&mut self, left: Expression) -> ParseResult<Expression> {
         match self.current_type() {
-            TokenType::Plus => self.parse_infix_expression(left),
-            TokenType::Minus => self.parse_infix_expression(left),
-            TokenType::Slash => self.parse_infix_expression(left),
-            TokenType::Asterix => self.parse_infix_expression(left),
-            TokenType::Equal => self.parse_infix_expression(left),
-            TokenType::NotEqual => self.parse_infix_expression(left),
-            TokenType::LT => self.parse_infix_expression(left),
-            TokenType::GT => self.parse_infix_expression(left),
-            TokenType::LParen => self.parse_call_expression(left), // left is fn
+            TokenType::Plus => self.parse_infix_expr(left),
+            TokenType::Minus => self.parse_infix_expr(left),
+            TokenType::Slash => self.parse_infix_expr(left),
+            TokenType::Asterix => self.parse_infix_expr(left),
+            TokenType::Equal => self.parse_infix_expr(left),
+            TokenType::NotEqual => self.parse_infix_expr(left),
+            TokenType::LT => self.parse_infix_expr(left),
+            TokenType::GT => self.parse_infix_expr(left),
+            TokenType::LParen => self.parse_call_expr(left), // left is fn
             _ => Err(ParserError::NoParserFor(self.current_type())),
         }
     }
@@ -131,9 +131,9 @@ impl<'a> Parser<'a> {
         let tkn = &self.current_token;
 
         match tkn.type_ {
-            TokenType::Let => self.parse_let_statement(),
-            TokenType::Return => self.parse_return_statement(),
-            _ => self.parse_expression_statement(),
+            TokenType::Let => self.parse_let_stmnt(),
+            TokenType::Return => self.parse_return_stmnt(),
+            _ => self.parse_expression_stmnt(),
         }
     }
 
@@ -159,7 +159,7 @@ impl<'a> Parser<'a> {
         &self.current_token.literal
     }
 
-    fn parse_let_statement(&mut self) -> ParseResult<Statement> {
+    fn parse_let_stmnt(&mut self) -> ParseResult<Statement> {
         if !self.expect_and_consume_token(TokenType::Identifier) {
             return Err(ParserError::IdentifierExpected);
         };
@@ -172,7 +172,7 @@ impl<'a> Parser<'a> {
         }
         self.next_token();
 
-        let value = self.parse_expression(Precedence::Lowest)?;
+        let value = self.parse_expr(Precedence::Lowest)?;
 
         let stmt = Statement::Let(ident, value);
         self.expect_and_consume_token(TokenType::Semicolon);
@@ -180,10 +180,10 @@ impl<'a> Parser<'a> {
         Ok(stmt)
     }
 
-    fn parse_return_statement(&mut self) -> ParseResult<Statement> {
+    fn parse_return_stmnt(&mut self) -> ParseResult<Statement> {
         self.next_token();
 
-        let return_val = self.parse_expression(Precedence::Lowest)?;
+        let return_val = self.parse_expr(Precedence::Lowest)?;
         self.expect_and_consume_token(TokenType::Semicolon);
         let stmt = Statement::Return(return_val);
         Ok(stmt)
@@ -191,8 +191,8 @@ impl<'a> Parser<'a> {
 
     /// The heart of the parser
     /// Read chapter 2.8 for an explanation.
-    fn parse_expression_statement(&mut self) -> ParseResult<Statement> {
-        let expr = self.parse_expression(Precedence::Lowest)?;
+    fn parse_expression_stmnt(&mut self) -> ParseResult<Statement> {
+        let expr = self.parse_expr(Precedence::Lowest)?;
 
         while self.peek_tkn_eq(TokenType::Semicolon) {
             self.next_token()
@@ -201,7 +201,7 @@ impl<'a> Parser<'a> {
         Ok(stmt)
     }
 
-    fn parse_expression(&mut self, prec: Precedence) -> ParseResult<Expression> {
+    fn parse_expr(&mut self, prec: Precedence) -> ParseResult<Expression> {
         let mut left = self.call_prefix_fn()?;
 
         while !self.peek_tkn_eq(TokenType::Semicolon) && prec < peek_precedence(&self) {
@@ -222,21 +222,21 @@ impl<'a> Parser<'a> {
         Expression::new_integer_literal(&self.current_token)
     }
 
-    fn parse_prefix_expression(&mut self) -> ParseResult<Expression> {
+    fn parse_prefix_expr(&mut self) -> ParseResult<Expression> {
         let operator_tkn = self.current_token.clone();
         self.next_token();
-        let right_expr = self.parse_expression(Precedence::Prefix)?;
+        let right_expr = self.parse_expr(Precedence::Prefix)?;
         Expression::new_prefix_expr(&operator_tkn, right_expr)
     }
 
     /// Method gets called when already on infix operator
-    fn parse_infix_expression(&mut self, left: Expression) -> ParseResult<Expression> {
+    fn parse_infix_expr(&mut self, left: Expression) -> ParseResult<Expression> {
         let prec = current_precedence(&self);
         // infix tkn {+, -, /, * ... == }
         let operator_tkn = self.current_token.clone();
         // move to next expression
         self.next_token();
-        let right = self.parse_expression(prec)?;
+        let right = self.parse_expr(prec)?;
         Expression::new_infix_expr(left, &operator_tkn, right)
     }
 
@@ -244,9 +244,9 @@ impl<'a> Parser<'a> {
         Ok(Expression::Bool(self.current_tkn_eq(TokenType::True)))
     }
 
-    fn parse_grouped_expression(&mut self) -> ParseResult<Expression> {
+    fn parse_grouped_expr(&mut self) -> ParseResult<Expression> {
         self.next_token();
-        let expr = self.parse_expression(Precedence::Lowest)?;
+        let expr = self.parse_expr(Precedence::Lowest)?;
 
         if !self.expect_and_consume_token(TokenType::RParen) {
             return Err(ParserError::CouldNotParse(
@@ -256,14 +256,14 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn parse_if_expression(&mut self) -> ParseResult<Expression> {
+    fn parse_if_expr(&mut self) -> ParseResult<Expression> {
         if !self.expect_and_consume_token(TokenType::LParen) {
             return Err(ParserError::CouldNotParse(
                 "missing left paren '('".to_string(),
             ));
         }
         self.next_token();
-        let condition = self.parse_expression(Precedence::Lowest)?;
+        let condition = self.parse_expr(Precedence::Lowest)?;
 
         if !self.expect_and_consume_token(TokenType::RParen) {
             return Err(ParserError::CouldNotParse(
@@ -355,7 +355,7 @@ impl<'a> Parser<'a> {
         Ok(identifiers)
     }
 
-    fn parse_call_expression(&mut self, function: Expression) -> ParseResult<Expression> {
+    fn parse_call_expr(&mut self, function: Expression) -> ParseResult<Expression> {
         let args = self.parse_call_args()?;
         Expression::new_call_expr(function, args)
     }
@@ -367,13 +367,13 @@ impl<'a> Parser<'a> {
             return Ok(args);
         }
         self.next_token();
-        args.push(self.parse_expression(Precedence::Lowest)?);
+        args.push(self.parse_expr(Precedence::Lowest)?);
 
         while self.peek_tkn_eq(TokenType::Comma) {
             // skip comma
             self.next_token();
             self.next_token();
-            args.push(self.parse_expression(Precedence::Lowest)?);
+            args.push(self.parse_expr(Precedence::Lowest)?);
         }
 
         if !self.expect_and_consume_token(TokenType::RParen) {
