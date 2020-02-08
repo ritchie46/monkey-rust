@@ -1,13 +1,16 @@
 use crate::ast::{Expression, Program, Statement};
 use crate::object::Object;
 
-pub fn eval(program_ast: &Program) -> Vec<Object> {
-    program_ast.iter().map(eval_stmt).collect()
+/// Run all statements and return last
+pub fn eval(program_ast: &Program) -> Object {
+    let mut ran_program: Vec<Object> = program_ast.iter().map(eval_stmt).collect();
+    ran_program.pop().unwrap()
 }
 
 fn eval_stmt(stmt: &Statement) -> Object {
     match stmt {
         Statement::Expr(expr) => eval_expr(expr),
+        Statement::Block(stmts) => eval(stmts),
         _ => Object::Null,
     }
 }
@@ -29,6 +32,11 @@ fn eval_expr(expr: &Expression) -> Object {
             let right = eval_expr(right);
             eval_infix_expr(operator, &left, &right)
         }
+        Expression::IfExpression {
+            condition,
+            consequence,
+            alternative,
+        } => eval_if_expr(condition, consequence, alternative),
         _ => Object::Null,
     }
 }
@@ -82,5 +90,29 @@ fn eval_bool_infix_expr(operator: &str, left: bool, right: bool) -> Object {
         "==" => Object::Bool(left == right),
         "!=" => Object::Bool(left != right),
         _ => Object::Null,
+    }
+}
+
+fn eval_if_expr(
+    condition: &Expression,
+    consequence: &Statement,
+    alternative: &Option<Box<Statement>>,
+) -> Object {
+    let condition = eval_expr(condition);
+    if is_truthy(&condition) {
+        eval_stmt(consequence)
+    } else {
+        match alternative {
+            Some(stmt) => eval_stmt(stmt),
+            _ => Object::Null,
+        }
+    }
+}
+
+fn is_truthy(condition: &Object) -> bool {
+    match condition {
+        Object::Null => false,
+        Object::Bool(false) => false,
+        _ => true,
     }
 }

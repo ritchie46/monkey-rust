@@ -180,7 +180,7 @@ mod eval_test {
     fn evaluated(input: &str) -> Object {
         let parsed = parse_program(input);
         let ev = eval(&parsed.unwrap());
-        ev[0].clone()
+        ev.clone()
     }
 
     #[test]
@@ -228,5 +228,20 @@ mod eval_test {
             let ev = evaluated(&input);
             assert_eq!(Object::Bool(*output), ev)
         }
+
+        let inputs = [
+            "if (true) { 4 }",
+            "if ( 5 < 4 ) { 1 } else { 2 }",
+            "if ( false ) { 1 } else {2}",
+        ];
+        let outputs = [4, 2, 2];
+        for (input, output) in inputs.iter().zip(&outputs) {
+            let ev = evaluated(&input);
+            assert_eq!(Object::Int(*output), ev)
+        }
+
+        // no alternative should return null
+        let out = evaluated(&"if (false) {1};");
+        assert_eq!(out, Object::Null);
     }
 }
