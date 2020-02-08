@@ -58,6 +58,7 @@ fn eval_minus_prefix_expr(right: &Object) -> Object {
 fn eval_infix_expr(operator: &str, left: &Object, right: &Object) -> Object {
     match (left, right) {
         (Object::Int(l), Object::Int(r)) => eval_int_infix_expr(operator, *l, *r),
+        (Object::Bool(l), Object::Bool(r)) => eval_bool_infix_expr(operator, *l, *r),
         _ => Object::Null,
     }
 }
@@ -68,6 +69,18 @@ fn eval_int_infix_expr(operator: &str, left: i64, right: i64) -> Object {
         "-" => Object::Int(left - right),
         "*" => Object::Int(left * right),
         "/" => Object::Int(left / right),
+        "<" => Object::Bool(left < right),
+        ">" => Object::Bool(left > right),
+        "==" => Object::Bool(left == right),
+        "!=" => Object::Bool(left != right),
+        _ => Object::Null,
+    }
+}
+
+fn eval_bool_infix_expr(operator: &str, left: bool, right: bool) -> Object {
+    match operator {
+        "==" => Object::Bool(left == right),
+        "!=" => Object::Bool(left != right),
         _ => Object::Null,
     }
 }

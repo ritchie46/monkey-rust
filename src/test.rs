@@ -208,13 +208,25 @@ mod eval_test {
             let ev = evaluated(&input);
             assert_eq!(Object::Int(*output), ev)
         }
+        let inputs = ["-593", "5 + 2 * 10", "(5 + 10 * 2 + 15 / 3) * 2 + -10"];
+        let outputs = [-593, 25, 50];
 
-        for (input, output) in ["-593", "5 + 2 * 10", "(5 + 10 * 2 + 15 / 3) * 2 + -10"]
-            .iter()
-            .zip(&[-593, 25, 50])
-        {
+        for (input, output) in inputs.iter().zip(&outputs) {
             let ev = evaluated(&input);
             assert_eq!(Object::Int(*output), ev)
+        }
+
+        let inputs = [
+            "true == true",
+            "(1 < 2) == true",
+            "(1 > 2) == false",
+            "(1 > 2) == true",
+        ];
+        let outputs = [true, true, true, false];
+
+        for (input, output) in inputs.iter().zip(&outputs) {
+            let ev = evaluated(&input);
+            assert_eq!(Object::Bool(*output), ev)
         }
     }
 }
