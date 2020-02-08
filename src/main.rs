@@ -2,7 +2,9 @@
 extern crate lazy_static;
 mod ast;
 mod err;
+mod evaluator;
 mod lexer;
+mod object;
 mod parser;
 mod repl;
 mod test;

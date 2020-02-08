@@ -1,4 +1,6 @@
+use crate::evaluator::eval;
 use crate::lexer::Lexer;
+use crate::parser::Parser;
 use crate::token::TokenType;
 use std::io;
 use std::io::Write;
@@ -13,16 +15,12 @@ pub fn start() {
         io::stdout().write_all([PROMPT, " "].concat().as_bytes());
         Write::flush(&mut io::stdout());
 
-        let mut s = String::new();
-        io_in.read_line(&mut s);
-        let mut lex = Lexer::new(&s);
+        let mut input = String::new();
+        io_in.read_line(&mut input);
 
-        loop {
-            let token = lex.next_token();
-            match token.type_ {
-                TokenType::EOF => return,
-                _ => println!("{:?}", token),
-            }
-        }
+        let mut lex = Lexer::new(&input);
+        let mut par = Parser::new(&mut lex);
+        let program_ast = par.parse_program().unwrap();
+        println!("{}", eval(&program_ast)[0])
     }
 }
