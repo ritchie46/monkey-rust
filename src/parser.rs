@@ -82,6 +82,7 @@ impl<'a> Parser<'a> {
             TokenType::True => self.parse_bool(),
             TokenType::False => self.parse_bool(),
             TokenType::LParen => self.parse_grouped_expression(),
+            TokenType::If => self.parse_if_expression(),
             _ => Err(ParserError::NoParserFor(self.current_type())),
         }
     }
@@ -253,5 +254,57 @@ impl<'a> Parser<'a> {
             ));
         }
         Ok(expr)
+    }
+
+    fn parse_if_expression(&mut self) -> ParseResult<Expression> {
+        if !self.expect_and_consume_token(TokenType::LParen) {
+            return Err(ParserError::CouldNotParse(
+                "missing left paren '('".to_string(),
+            ));
+        }
+        self.next_token();
+        let condition = self.parse_expression(Precedence::Lowest)?;
+
+        if !self.expect_and_consume_token(TokenType::RParen) {
+            return Err(ParserError::CouldNotParse(
+                "missing right paren ')'".to_string(),
+            ));
+        }
+
+        if !self.expect_and_consume_token(TokenType::LBrace) {
+            return Err(ParserError::CouldNotParse(
+                "missing left brace '{'".to_string(),
+            ));
+        }
+
+        let consequence = self.parse_block_stmt()?;
+        let mut alternative = None;
+
+        if self.peek_tkn_eq(TokenType::Else) {
+            self.next_token();
+
+            if !self.expect_and_consume_token(TokenType::LBrace) {
+                return Err(ParserError::CouldNotParse(
+                    "missing left brace '{'".to_string(),
+                ));
+            }
+            alternative = Some(self.parse_block_stmt()?)
+        }
+        Expression::new_if_expr(condition, consequence, alternative)
+    }
+
+    fn parse_block_stmt(&mut self) -> ParseResult<Statement> {
+        let mut stmts = vec![];
+
+        self.next_token();
+
+        while !self.current_tkn_eq(TokenType::RBrace)
+            && !self.current_tkn_eq(TokenType::EOF)
+        {
+            let stmt = self.parse_statement()?;
+            stmts.push(stmt);
+            self.next_token();
+        }
+        Statement::new_block(stmts)
     }
 }

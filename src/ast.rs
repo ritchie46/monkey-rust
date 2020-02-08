@@ -7,7 +7,13 @@ pub enum Statement {
     Let(String, Expression), // identifier, expr
     Return(Expression),
     Expr(Expression),
-    Block,
+    Block(Box<Vec<Statement>>), // other statements
+}
+
+impl Statement {
+    pub fn new_block(statements: Vec<Statement>) -> ParseResult<Statement> {
+        Ok(Statement::Block(Box::new(statements)))
+    }
 }
 
 impl std::fmt::Display for Statement {
@@ -16,9 +22,18 @@ impl std::fmt::Display for Statement {
             Statement::Let(ident, _) => write!(f, "let {} = ", ident),
             Statement::Return(e) => write!(f, "return {}", e),
             Statement::Expr(e) => write!(f, "{}", e),
+            Statement::Block(stmts) => f.write_str(&write_block(stmts)),
             _ => f.write_str("not implemented yet"),
         }
     }
+}
+
+fn write_block(stmts: &Vec<Statement>) -> String {
+    let mut s = String::new();
+    for b in stmts {
+        s.push_str(&format!("{}", b))
+    }
+    s
 }
 
 #[derive(Debug, PartialOrd, PartialEq, Clone)]
@@ -38,7 +53,7 @@ pub enum Expression {
     IfExpression {
         condition: Box<Expression>,
         consequence: Box<Statement>,
-        alternative: Box<Statement>,
+        alternative: Option<Box<Statement>>,
     },
     Some,
 }
@@ -55,8 +70,26 @@ impl fmt::Display for Expression {
                 right,
             } => write!(f, "({} {} {})", left, operator, right),
             Expression::Bool(b) => write!(f, "{}", b),
+            Expression::IfExpression {
+                condition,
+                consequence,
+                alternative,
+            } => write!(
+                f,
+                "if {} {{ {} }} else {{ {} }}",
+                condition,
+                consequence,
+                write_alternative_block(alternative)
+            ),
             _ => f.write_str("not impl"),
         }
+    }
+}
+
+fn write_alternative_block(alt: &Option<Box<Statement>>) -> String {
+    match alt {
+        Some(s) => format!("{}", s),
+        None => "pass".to_string(),
     }
 }
 
@@ -89,6 +122,24 @@ impl Expression {
             operator,
             right: Box::new(right),
         })
+    }
+
+    pub fn new_if_expr(
+        condition: Expression,
+        consequence: Statement,
+        alternative: Option<Statement>,
+    ) -> ParseResult<Expression> {
+        let alternative = match alternative {
+            Some(stmt) => Some(Box::new(stmt)),
+            None => None,
+        };
+
+        let expr = Expression::IfExpression {
+            condition: Box::new(condition),
+            consequence: Box::new(consequence),
+            alternative,
+        };
+        Ok(expr)
     }
 }
 

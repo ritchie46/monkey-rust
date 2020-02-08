@@ -58,10 +58,10 @@ mod test {
         let input = "-5;";
         let parsed = parse_program(&input);
         assert_eq!(
-            Statement::Expr(Expression::Prefix(
-                "-".to_string(),
-                Box::new(Expression::IntegerLiteral(5 as i64))
-            )),
+            Statement::Expr(Expression::Prefix {
+                operator: "-".to_string(),
+                expr: Box::new(Expression::IntegerLiteral(5 as i64))
+            }),
             parsed.unwrap().statements[0]
         );
     }
@@ -77,16 +77,6 @@ mod test {
     fn test_infix_expression() {
         let input = "-5 == 10;";
         let parsed = parse_program(&input).unwrap();
-        let stmt = Statement::Expr(Expression::Infix(
-            Box::new(Expression::Prefix(
-                "-".to_string(),
-                Box::new(Expression::IntegerLiteral(5 as i64)),
-            )),
-            "==".to_string(),
-            Box::new(Expression::IntegerLiteral(10 as i64)),
-        ));
-        assert_eq!(stmt, parsed.statements[0]);
-
         let inputs = [
             "a + b * c + d / e - f",
             "a != 10;",
@@ -114,5 +104,22 @@ mod test {
         let inputs = ["1 + (2 + 3) + 4"];
         let outputs = ["((1 + (2 + 3)) + 4)"];
         test_operator_precedence_parsing(&inputs, &outputs)
+    }
+
+    #[test]
+    fn test_if_expr() {
+        let input = "if (x < y) { x }";
+        let parsed = parse_program(&input);
+        assert_eq!(
+            "if (x < y) { x } else { pass }",
+            format!("{}", parsed.unwrap().statements[0])
+        );
+
+        let input = "if (x < y) { x } else { y }";
+        let parsed = parse_program(&input);
+        assert_eq!(
+            "if (x < y) { x } else { y }",
+            format!("{}", parsed.unwrap().statements[0])
+        );
     }
 }
