@@ -177,20 +177,32 @@ mod eval_test {
     use crate::evaluator::eval;
     use crate::object::Object;
 
+    fn evaluated(input: &str) -> Object {
+        let parsed = parse_program(input);
+        let ev = eval(&parsed.unwrap());
+        ev[0].clone()
+    }
+
     #[test]
     fn test_int_eval() {
         let input = "5";
-        let parsed = parse_program(&input);
-        let evaluated = eval(&parsed.unwrap());
-        assert_eq!(Object::Int(5), evaluated[0])
+        let ev = evaluated(&input);
+        assert_eq!(Object::Int(5), ev)
     }
 
     #[test]
     fn test_bool_eval() {
         for (input, output) in ["true", "false"].iter().zip(&[true, false]) {
-            let parsed = parse_program(&input);
-            let evaluated = eval(&parsed.unwrap());
-            assert_eq!(Object::Bool(*output), evaluated[0])
+            let ev = evaluated(&input);
+            assert_eq!(Object::Bool(*output), ev)
+        }
+    }
+
+    #[test]
+    fn test_prefix_eval() {
+        for (input, output) in ["!true", "!!false"].iter().zip(&[false, false]) {
+            let ev = evaluated(&input);
+            assert_eq!(Object::Bool(*output), ev)
         }
     }
 }

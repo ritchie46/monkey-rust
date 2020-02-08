@@ -16,6 +16,24 @@ fn eval_expr(expr: &Expression) -> Object {
     match expr {
         Expression::IntegerLiteral(int) => Object::Int(*int),
         Expression::Bool(b) => Object::Bool(*b),
+        Expression::Prefix { operator, expr } => {
+            let right = eval_expr(expr);
+            eval_prefix_expr(operator, &right)
+        }
+        _ => Object::Null,
+    }
+}
+
+fn eval_prefix_expr(operator: &str, right: &Object) -> Object {
+    match operator {
+        "!" => eval_bang_operator_expr(right),
+        _ => Object::Null,
+    }
+}
+
+fn eval_bang_operator_expr(right: &Object) -> Object {
+    match right {
+        Object::Bool(b) => Object::Bool(!*b),
         _ => Object::Null,
     }
 }
