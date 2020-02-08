@@ -28,6 +28,7 @@ lazy_static! {
         m.insert(TokenType::Minus, Precedence::Sum);
         m.insert(TokenType::Slash, Precedence::Product);
         m.insert(TokenType::Asterix, Precedence::Product);
+        m.insert(TokenType::LParen, Precedence::Call);
         m
     };
     static ref INFIX_OPS: HashSet<TokenType> = {
@@ -40,6 +41,7 @@ lazy_static! {
         s.insert(TokenType::NotEqual);
         s.insert(TokenType::LT);
         s.insert(TokenType::GT);
+        s.insert(TokenType::LParen);
         s
     };
 }
@@ -98,6 +100,7 @@ impl<'a> Parser<'a> {
             TokenType::NotEqual => self.parse_infix_expression(left),
             TokenType::LT => self.parse_infix_expression(left),
             TokenType::GT => self.parse_infix_expression(left),
+            TokenType::LParen => self.parse_call_expression(left), // left is fn
             _ => Err(ParserError::NoParserFor(self.current_type())),
         }
     }
@@ -350,9 +353,38 @@ impl<'a> Parser<'a> {
 
         if !self.expect_and_consume_token(TokenType::RParen) {
             return Err(ParserError::CouldNotParse(
-                "missing right paren ')'".to_string(),
+                "missing right paren in function literal ')'".to_string(),
             ));
         }
         Ok(identifiers)
+    }
+
+    fn parse_call_expression(&mut self, function: Expression) -> ParseResult<Expression> {
+        let args = self.parse_call_args()?;
+        Expression::new_call_expr(function, args)
+    }
+
+    fn parse_call_args(&mut self) -> ParseResult<Vec<Expression>> {
+        let mut args: Vec<Expression> = vec![];
+
+        if self.expect_and_consume_token(TokenType::RParen) {
+            return Ok(args);
+        }
+        self.next_token();
+        args.push(self.parse_expression(Precedence::Lowest)?);
+
+        while self.peek_tkn_eq(TokenType::Comma) {
+            // skip comma
+            self.next_token();
+            self.next_token();
+            args.push(self.parse_expression(Precedence::Lowest)?);
+        }
+
+        if !self.expect_and_consume_token(TokenType::RParen) {
+            return Err(ParserError::CouldNotParse(
+                "missing right paren in function call ')'".to_string(),
+            ));
+        }
+        Ok(args)
     }
 }

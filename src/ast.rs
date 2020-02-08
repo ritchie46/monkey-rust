@@ -51,6 +51,10 @@ pub enum Expression {
         parameters: Box<Vec<Expression>>, // expression::identifier
         body: Box<Statement>,             // statement::block
     },
+    CallExpr {
+        function: Box<Expression>,
+        args: Box<Vec<Expression>>,
+    },
     Some,
 }
 
@@ -79,6 +83,9 @@ impl fmt::Display for Expression {
             ),
             Expression::FunctionLiteral { parameters, body } => {
                 f.write_str(&write_function_literal(parameters, body))
+            }
+            Expression::CallExpr { function, args } => {
+                f.write_str(&write_call_expr(function, args))
             }
             _ => f.write_str("not impl"),
         }
@@ -144,6 +151,17 @@ impl Expression {
         };
         Ok(expr)
     }
+
+    pub fn new_call_expr(
+        function: Expression,
+        args: Vec<Expression>,
+    ) -> ParseResult<Expression> {
+        let expr = Expression::CallExpr {
+            function: Box::new(function),
+            args: Box::new(args),
+        };
+        Ok(expr)
+    }
 }
 
 #[derive(Debug)]
@@ -168,16 +186,26 @@ fn write_alternative_block(alt: &Option<Box<Statement>>) -> String {
     }
 }
 
-fn write_function_literal(parameters: &Vec<Expression>, body: &Statement) -> String {
-    let mut s = "fn(".to_string();
-    for (i, p) in parameters.iter().enumerate() {
+fn format_comma_seperated_args(s: &mut String, args: &Vec<Expression>) {
+    for (i, p) in args.iter().enumerate() {
         if i == 0 {
             s.push_str(&format!("{}", p))
         } else {
             s.push_str(&format!(", {}", p))
         }
     }
-    s.push_str(&format!(") {{ {} }}", body));
+}
 
+fn write_function_literal(parameters: &Vec<Expression>, body: &Statement) -> String {
+    let mut s = "fn(".to_string();
+    format_comma_seperated_args(&mut s, parameters);
+    s.push_str(&format!(") {{ {} }}", body));
+    s
+}
+
+fn write_call_expr(function: &Expression, args: &Vec<Expression>) -> String {
+    let mut s = format!("{}(", function);
+    format_comma_seperated_args(&mut s, args);
+    s.push(')');
     s
 }

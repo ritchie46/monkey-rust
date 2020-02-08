@@ -138,4 +138,19 @@ mod test {
             format!("{}", parsed.unwrap().statements[0])
         );
     }
+
+    #[test]
+    fn test_call_expr() {
+        let inputs = [
+            "add(1, 2 * 3, 4 + 5);",
+            "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+            "add(a + b + c * d / f + g)",
+        ];
+        let outputs = [
+            "add(1, (2 * 3), (4 + 5))",
+            "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+            "add((((a + b) + ((c * d) / f)) + g))",
+        ];
+        test_operator_precedence_parsing(&inputs, &outputs)
+    }
 }
