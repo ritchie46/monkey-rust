@@ -7,6 +7,16 @@ pub enum Object {
     Null,
 }
 
+impl Object {
+    pub fn get_type(&self) -> &'static str {
+        match self {
+            Object::Int(_) => "int",
+            Object::Bool(_) => "bool",
+            Object::Null => "null",
+        }
+    }
+}
+
 impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

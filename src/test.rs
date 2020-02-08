@@ -199,12 +199,20 @@ mod eval_test {
     }
 
     #[test]
-    fn test_prefix_eval() {
+    fn test_eval() {
         for (input, output) in ["!true", "!!false"].iter().zip(&[false, false]) {
             let ev = evaluated(&input);
             assert_eq!(Object::Bool(*output), ev)
         }
         for (input, output) in ["-5", "--5"].iter().zip(&[-5, 5]) {
+            let ev = evaluated(&input);
+            assert_eq!(Object::Int(*output), ev)
+        }
+
+        for (input, output) in ["-593", "5 + 2 * 10", "(5 + 10 * 2 + 15 / 3) * 2 + -10"]
+            .iter()
+            .zip(&[-593, 25, 50])
+        {
             let ev = evaluated(&input);
             assert_eq!(Object::Int(*output), ev)
         }

@@ -20,6 +20,15 @@ fn eval_expr(expr: &Expression) -> Object {
             let right = eval_expr(expr);
             eval_prefix_expr(operator, &right)
         }
+        Expression::Infix {
+            left,
+            operator,
+            right,
+        } => {
+            let left = eval_expr(left);
+            let right = eval_expr(right);
+            eval_infix_expr(operator, &left, &right)
+        }
         _ => Object::Null,
     }
 }
@@ -42,6 +51,23 @@ fn eval_bang_operator_expr(right: &Object) -> Object {
 fn eval_minus_prefix_expr(right: &Object) -> Object {
     match right {
         Object::Int(int) => Object::Int(-*int),
+        _ => Object::Null,
+    }
+}
+
+fn eval_infix_expr(operator: &str, left: &Object, right: &Object) -> Object {
+    match (left, right) {
+        (Object::Int(l), Object::Int(r)) => eval_int_infix_expr(operator, *l, *r),
+        _ => Object::Null,
+    }
+}
+
+fn eval_int_infix_expr(operator: &str, left: i64, right: i64) -> Object {
+    match operator {
+        "+" => Object::Int(left + right),
+        "-" => Object::Int(left - right),
+        "*" => Object::Int(left * right),
+        "/" => Object::Int(left / right),
         _ => Object::Null,
     }
 }
