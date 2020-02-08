@@ -3,14 +3,26 @@ use crate::object::Object;
 
 /// Run all statements and return last
 pub fn eval(program_ast: &Program) -> Object {
-    let mut ran_program: Vec<Object> = program_ast.iter().map(eval_stmt).collect();
-    ran_program.pop().unwrap()
+    let mut stmts_executed = vec![];
+
+    for stmt in program_ast {
+        let obj = eval_stmt(stmt);
+
+        // Don't execute code later than return.
+        if let Object::ReturnValue(inner_obj) = obj {
+            return *inner_obj;
+        } else {
+            stmts_executed.push(obj);
+        }
+    }
+    stmts_executed.pop().unwrap()
 }
 
 fn eval_stmt(stmt: &Statement) -> Object {
     match stmt {
         Statement::Expr(expr) => eval_expr(expr),
         Statement::Block(stmts) => eval(stmts),
+        Statement::Return(expr) => Object::new_return_val(eval_expr(expr)),
         _ => Object::Null,
     }
 }

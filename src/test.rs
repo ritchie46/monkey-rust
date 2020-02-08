@@ -243,5 +243,17 @@ mod eval_test {
         // no alternative should return null
         let out = evaluated(&"if (false) {1};");
         assert_eq!(out, Object::Null);
+
+        let inputs = [
+            "return 10;",
+            "return 10;9",
+            "return 2 * 5; 9;",
+            "9; return 2 * 5; 9;",
+        ];
+        let outputs = [10, 10, 10, 10];
+        for (input, output) in inputs.iter().zip(&outputs) {
+            let ev = evaluated(&input);
+            assert_eq!(Object::Int(*output), ev)
+        }
     }
 }
