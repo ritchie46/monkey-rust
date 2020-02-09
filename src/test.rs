@@ -174,12 +174,12 @@ mod parser_test {
 #[cfg(test)]
 mod eval_test {
     use super::*;
-    use crate::evaluator::eval;
+    use crate::evaluator::eval_program;
     use crate::object::Object;
 
     fn evaluated(input: &str) -> Object {
         let parsed = parse_program(input);
-        let ev = eval(&parsed.unwrap());
+        let ev = eval_program(&parsed.unwrap());
         ev.clone()
     }
 
@@ -249,11 +249,18 @@ mod eval_test {
             "return 10;9",
             "return 2 * 5; 9;",
             "9; return 2 * 5; 9;",
+            // early return
+            "if (10 > 1) {
+                if (10 > 1) {
+                    return 10;
+                }
+                return 1;
+             }",
         ];
-        let outputs = [10, 10, 10, 10];
+        let outputs = [10, 10, 10, 10, 10];
         for (input, output) in inputs.iter().zip(&outputs) {
             let ev = evaluated(&input);
-            assert_eq!(Object::Int(*output), ev)
+            assert_eq!(ev, Object::Int(*output))
         }
     }
 }

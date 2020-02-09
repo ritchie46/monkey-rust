@@ -1,4 +1,4 @@
-use crate::evaluator::eval;
+use crate::evaluator::eval_program;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::token::TokenType;
@@ -21,6 +21,6 @@ pub fn start() {
         let mut lex = Lexer::new(&input);
         let mut par = Parser::new(&mut lex);
         let program_ast = par.parse_program().unwrap();
-        println!("{}", eval(&program_ast))
+        println!("{}", eval_program(&program_ast))
     }
 }

@@ -2,7 +2,7 @@ use crate::ast::{Expression, Program, Statement};
 use crate::object::Object;
 
 /// Run all statements and return last
-pub fn eval(program_ast: &Program) -> Object {
+pub fn eval_program(program_ast: &Program) -> Object {
     let mut stmts_executed = vec![];
 
     for stmt in program_ast {
@@ -18,10 +18,24 @@ pub fn eval(program_ast: &Program) -> Object {
     stmts_executed.pop().unwrap()
 }
 
+fn eval_block_stmt(block: &Vec<Statement>) -> Object {
+    let mut result: Object = Object::Null;
+    for stmt in block {
+        result = eval_stmt(stmt);
+
+        // Don't unpack. but return the Return Wrapper.
+        // Unpacking is done in eval_program
+        if let Object::ReturnValue(_) = result {
+            return result;
+        }
+    }
+    result
+}
+
 fn eval_stmt(stmt: &Statement) -> Object {
     match stmt {
         Statement::Expr(expr) => eval_expr(expr),
-        Statement::Block(stmts) => eval(stmts),
+        Statement::Block(stmts) => eval_block_stmt(stmts),
         Statement::Return(expr) => Object::new_return_val(eval_expr(expr)),
         _ => Object::Null,
     }
