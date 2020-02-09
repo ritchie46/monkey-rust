@@ -2,6 +2,7 @@ use crate::evaluator::eval_program;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::token::TokenType;
+use crate::Environment;
 use std::io;
 use std::io::Write;
 
@@ -9,6 +10,7 @@ const PROMPT: &str = ">>";
 
 pub fn start() {
     let io_in = io::stdin();
+    let mut env = Environment::new();
     loop {
         // Use stdout() instead of print! macro
         // Print macro gets flushed when new line is encountered
@@ -21,6 +23,6 @@ pub fn start() {
         let mut lex = Lexer::new(&input);
         let mut par = Parser::new(&mut lex);
         let program_ast = par.parse_program().unwrap();
-        println!("{}", eval_program(&program_ast))
+        println!("{}", eval_program(&program_ast, &mut env))
     }
 }

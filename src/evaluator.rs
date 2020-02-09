@@ -1,9 +1,9 @@
 use crate::ast::{Expression, Program, Statement};
-use crate::Object;
+use crate::{Environment, Object};
 use std::fs::read_to_string;
 
 /// Run all statements and return last
-pub fn eval_program(program_ast: &Program) -> Object {
+pub fn eval_program(program_ast: &Program, env: &mut Environment) -> Object {
     let mut stmts_executed = vec![];
 
     for stmt in program_ast {

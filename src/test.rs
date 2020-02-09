@@ -2,6 +2,7 @@ use crate::ast::*;
 use crate::err::ParserError;
 use crate::lexer::Lexer;
 use crate::parser::*;
+use crate::Environment;
 
 fn parse_program(input: &str) -> Result<Program, ParserError> {
     let mut lex = Lexer::new(&input);
@@ -179,7 +180,8 @@ mod eval_test {
 
     fn evaluated(input: &str) -> Object {
         let parsed = parse_program(input);
-        let ev = eval_program(&parsed.unwrap());
+        let mut env = Environment::new();
+        let ev = eval_program(&parsed.unwrap(), &mut env);
         ev.clone()
     }
 

@@ -12,8 +12,8 @@ mod parser;
 mod repl;
 mod test;
 mod token;
-use object::object::Object as Object;
-use object::environment::Environment as Environment;
+use object::environment::Environment;
+use object::object::Object;
 
 fn main() {
     println!(
