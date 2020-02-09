@@ -1,18 +1,20 @@
 use crate::ast::{Expression, Program, Statement};
 use crate::object::Object;
+use std::fs::read_to_string;
 
 /// Run all statements and return last
 pub fn eval_program(program_ast: &Program) -> Object {
     let mut stmts_executed = vec![];
 
     for stmt in program_ast {
-        let obj = eval_stmt(stmt);
+        let result = eval_stmt(stmt);
 
-        // Don't execute code later than return.
-        if let Object::ReturnValue(inner_obj) = obj {
-            return *inner_obj;
-        } else {
-            stmts_executed.push(obj);
+        // A return or an Error should stop further evaluation
+        // The return is unpacked
+        match result {
+            Object::ReturnValue(obj) => return *obj,
+            Object::Error(_) => return result,
+            _ => stmts_executed.push(result),
         }
     }
     stmts_executed.pop().unwrap()
@@ -23,10 +25,12 @@ fn eval_block_stmt(block: &Vec<Statement>) -> Object {
     for stmt in block {
         result = eval_stmt(stmt);
 
-        // Don't unpack. but return the Return Wrapper.
-        // Unpacking is done in eval_program
-        if let Object::ReturnValue(_) = result {
-            return result;
+        match result {
+            Object::Error(_) => return result,
+            // Don't unpack. but return the Return Wrapper.
+            // Unpacking is done in eval_program
+            Object::ReturnValue(_) => return result,
+            _ => {}
         }
     }
     result

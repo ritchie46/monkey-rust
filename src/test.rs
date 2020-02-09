@@ -262,5 +262,16 @@ mod eval_test {
             let ev = evaluated(&input);
             assert_eq!(ev, Object::Int(*output))
         }
+
+        let inputs = ["if (10 > 1) { true + false; }", "-true", "5 + true; 6"];
+        let outputs = [
+            "Error: unknown operator: bool + bool",
+            "Error: unknown operator: -bool",
+            "Error: type mismatch: int + bool",
+        ];
+        for (input, output) in inputs.iter().zip(&outputs) {
+            let ev = evaluated(&input);
+            assert_eq!(ev, Object::Error(output.to_string()))
+        }
     }
 }
