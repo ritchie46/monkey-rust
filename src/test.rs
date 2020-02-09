@@ -175,7 +175,7 @@ mod parser_test {
 mod eval_test {
     use super::*;
     use crate::evaluator::eval_program;
-    use crate::object::Object;
+    use crate::Object;
 
     fn evaluated(input: &str) -> Object {
         let parsed = parse_program(input);

@@ -1,5 +1,5 @@
 use crate::ast::{Expression, Program, Statement};
-use crate::object::Object;
+use crate::Object;
 use std::fs::read_to_string;
 
 /// Run all statements and return last
