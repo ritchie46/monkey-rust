@@ -275,5 +275,12 @@ mod eval_test {
             let ev = evaluated(&input);
             assert_eq!(ev, Object::Error(output.to_string()))
         }
+
+        let inputs = ["let a = 15; a", "let b = 30 / 3; 10;"];
+        let outputs = [15, 10];
+        for (input, output) in inputs.iter().zip(&outputs) {
+            let ev = evaluated(&input);
+            assert_eq!(ev, Object::Int(*output))
+        }
     }
 }
