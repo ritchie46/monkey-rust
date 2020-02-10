@@ -1,5 +1,9 @@
 use crate::ast::{Expression, Program, Statement};
+use crate::object::environment::new_enclosed_environment;
+use crate::object::object::Function;
 use crate::{Env, Object};
+use std::fs::read_to_string;
+use std::rc::Rc;
 
 /// Run all statements and return last
 pub fn eval_program(program_ast: &Program, env: &Env) -> Object {
@@ -68,9 +72,13 @@ fn eval_expr(expr: &Expression, env: &Env) -> Object {
             alternative,
         } => eval_if_expr(condition, consequence, alternative, env),
         Expression::Identifier(name) => eval_identifier(name, env),
-        Expression::FunctionLiteral { args, body } => {
-            Object::new_function(*args.clone(), *body.clone(), env)
+        Expression::FunctionLiteral { parameters, body } => {
+            Object::new_function(parameters, body, env)
         }
+        Expression::CallExpr {
+            function: fn_literal,
+            args,
+        } => eval_call_expr(fn_literal, args, env),
         _ => Object::Null,
     }
 }
@@ -164,7 +172,7 @@ fn eval_let_stmt(identifier: &str, expr: &Expression, env: &Env) -> Object {
     }
 
     let mut env = env.borrow_mut();
-    env.set(identifier, evaluated);
+    env.set(identifier, &evaluated);
     Object::Null
 }
 
@@ -172,9 +180,69 @@ fn eval_identifier(identifier: &str, env: &Env) -> Object {
     let env = env.borrow();
 
     let val = env.get(identifier);
-    val.unwrap_or(&Object::new_error(&format!(
+    val.unwrap_or(Object::new_error(&format!(
         "identifier not found: {}",
         identifier
     )))
-    .clone()
+    .clone() // clone from environment
+}
+
+fn eval_call_expr(function: &Expression, args: &Vec<Expression>, env: &Env) -> Object {
+    let function_ident = eval_expr(function, env);
+
+    let f: Function = match function_ident {
+        Object::Error(_) => return function_ident,
+        Object::Function(f) => f,
+        _ => {
+            return panic!("eval_call_expr called with Expression that is not a CallExpr")
+        }
+    };
+
+    let arg_objs = eval_expressions(args, env);
+    if arg_objs.len() == 1 {
+        if let Object::Error(_) = arg_objs[0] {
+            return arg_objs[0].clone();
+        }
+    }
+    apply_function(&f, &arg_objs, env)
+}
+
+fn eval_expressions(exprs: &Vec<Expression>, env: &Env) -> Vec<Object> {
+    let mut iter = exprs.iter().map(|expr| eval_expr(expr, env));
+
+    let mut objects: Vec<Object> = vec![];
+
+    while let Some(o) = iter.next() {
+        if let Object::Error(_) = o {
+            return vec![o];
+        }
+        objects.push(o);
+    }
+    objects
+}
+
+fn apply_function(f: &Function, args: &[Object], env: &Env) -> Object {
+    //    if let Object::Function(f) = &func {
+    let env = create_function_env(f, args, env);
+    let evaluated = eval_stmt(&f.body, &env);
+
+    if let Object::ReturnValue(return_val) = evaluated {
+        return *return_val;
+    }
+    evaluated
+}
+
+fn create_function_env(func: &Function, args: &[Object], env: &Env) -> Env {
+    let env = new_enclosed_environment(env);
+
+    {
+        let mut envcell = env.borrow_mut();
+
+        for (param, value) in func.parameters.iter().zip(args) {
+            if let Expression::Identifier(ident) = param {
+                envcell.set(ident, value)
+            }
+        }
+    }
+    env
 }

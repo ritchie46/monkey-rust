@@ -15,8 +15,8 @@ pub enum Object {
 
 #[derive(Debug, Clone)]
 pub struct Function {
-    args: Vec<Expression>, // Identifier
-    body: Statement,       // Blockstmt
+    pub parameters: Vec<Expression>, // Identifier
+    pub body: Statement,             // Blockstmt
     env: Env,
 }
 
@@ -45,14 +45,19 @@ impl Object {
         match self {
             Object::Int(_) => "int",
             Object::Bool(_) => "bool",
+            Object::Error(_) => "err",
             _ => "null",
         }
     }
 
-    pub fn new_function(args: Vec<Expression>, body: Statement, env: &Env) -> Object {
+    pub fn new_function(
+        parameters: &Vec<Expression>,
+        body: &Statement,
+        env: &Env,
+    ) -> Object {
         Object::Function(Function {
-            args,
-            body,
+            parameters: parameters.clone(),
+            body: body.clone(),
             env: Rc::clone(env),
         })
     }
@@ -67,7 +72,7 @@ impl fmt::Display for Object {
             Object::ReturnValue(obj) => write!(f, "{}", obj),
             Object::Error(s) => f.write_str(s),
             Object::Function(func) => {
-                f.write_str(&fmt_function_literal(&func.args, &func.body))
+                f.write_str(&fmt_function_literal(&func.parameters, &func.body))
             }
             _ => f.write_str("not impl."),
         }

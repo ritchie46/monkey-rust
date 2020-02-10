@@ -283,4 +283,14 @@ mod eval_test {
             assert_eq!(ev, Object::Int(*output))
         }
     }
+
+    #[test]
+    fn test_function_eval() {
+        let inputs = ["let add = fn(x, y) { x + y }; add(2, 2);"];
+        let outputs = [4];
+        for (input, output) in inputs.iter().zip(&outputs) {
+            let ev = evaluated(&input);
+            assert_eq!(ev, Object::Int(*output))
+        }
+    }
 }

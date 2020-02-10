@@ -50,11 +50,11 @@ pub enum Expression {
         alternative: Option<Box<Statement>>,
     },
     FunctionLiteral {
-        args: Box<Vec<Expression>>, // expression::identifier
-        body: Box<Statement>,       // statement::block
+        parameters: Box<Vec<Expression>>, // expression::identifier
+        body: Box<Statement>,             // statement::block
     },
     CallExpr {
-        function: Box<Expression>,
+        function: Box<Expression>, // FunctionLiteral
         args: Box<Vec<Expression>>,
     },
     Some,
@@ -84,7 +84,7 @@ impl fmt::Display for Expression {
                 fmt_alternative_block(alternative)
             ),
             Expression::FunctionLiteral {
-                args: parameters,
+                parameters: parameters,
                 body,
             } => f.write_str(&fmt_function_literal(parameters, body)),
             Expression::CallExpr { function, args } => {
@@ -149,7 +149,7 @@ impl Expression {
         body: Statement,
     ) -> ParseResult<Expression> {
         let expr = Expression::FunctionLiteral {
-            args: Box::new(params),
+            parameters: Box::new(params),
             body: Box::new(body),
         };
         Ok(expr)
