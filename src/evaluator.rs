@@ -1,10 +1,8 @@
 use crate::ast::{Expression, Program, Statement};
-use crate::{Environment, Object};
-use std::fs::read_to_string;
-use std::process::id;
+use crate::{Env, Object};
 
 /// Run all statements and return last
-pub fn eval_program(program_ast: &Program, env: &mut Environment) -> Object {
+pub fn eval_program(program_ast: &Program, env: &Env) -> Object {
     let mut stmts_executed = vec![];
 
     for stmt in program_ast {
@@ -21,7 +19,7 @@ pub fn eval_program(program_ast: &Program, env: &mut Environment) -> Object {
     stmts_executed.pop().unwrap()
 }
 
-fn eval_block_stmt(block: &Vec<Statement>, env: &mut Environment) -> Object {
+fn eval_block_stmt(block: &Vec<Statement>, env: &Env) -> Object {
     let mut result: Object = Object::Null;
     for stmt in block {
         result = eval_stmt(stmt, env);
@@ -37,7 +35,7 @@ fn eval_block_stmt(block: &Vec<Statement>, env: &mut Environment) -> Object {
     result
 }
 
-fn eval_stmt(stmt: &Statement, env: &mut Environment) -> Object {
+fn eval_stmt(stmt: &Statement, env: &Env) -> Object {
     match stmt {
         Statement::Expr(expr) => eval_expr(expr, env),
         Statement::Block(stmts) => eval_block_stmt(stmts, env),
@@ -47,7 +45,7 @@ fn eval_stmt(stmt: &Statement, env: &mut Environment) -> Object {
     }
 }
 
-fn eval_expr(expr: &Expression, env: &mut Environment) -> Object {
+fn eval_expr(expr: &Expression, env: &Env) -> Object {
     match expr {
         Expression::IntegerLiteral(int) => Object::Int(*int),
         Expression::Bool(b) => Object::Bool(*b),
@@ -70,6 +68,9 @@ fn eval_expr(expr: &Expression, env: &mut Environment) -> Object {
             alternative,
         } => eval_if_expr(condition, consequence, alternative, env),
         Expression::Identifier(name) => eval_identifier(name, env),
+        Expression::FunctionLiteral { args, body } => {
+            Object::new_function(*args.clone(), *body.clone(), env)
+        }
         _ => Object::Null,
     }
 }
@@ -135,7 +136,7 @@ fn eval_if_expr(
     condition: &Expression,
     consequence: &Statement,
     alternative: &Option<Box<Statement>>,
-    env: &mut Environment,
+    env: &Env,
 ) -> Object {
     let condition = eval_expr(condition, env);
     if is_truthy(&condition) {
@@ -156,16 +157,20 @@ fn is_truthy(condition: &Object) -> bool {
     }
 }
 
-fn eval_let_stmt(identifier: &str, expr: &Expression, env: &mut Environment) -> Object {
+fn eval_let_stmt(identifier: &str, expr: &Expression, env: &Env) -> Object {
     let evaluated = eval_expr(expr, env);
     if let Object::Error(_) = evaluated {
         return evaluated;
     }
+
+    let mut env = env.borrow_mut();
     env.set(identifier, evaluated);
     Object::Null
 }
 
-fn eval_identifier(identifier: &str, env: &Environment) -> Object {
+fn eval_identifier(identifier: &str, env: &Env) -> Object {
+    let env = env.borrow();
+
     let val = env.get(identifier);
     val.unwrap_or(&Object::new_error(&format!(
         "identifier not found: {}",

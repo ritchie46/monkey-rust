@@ -1,7 +1,5 @@
 use crate::token::TokenType;
-use std::error::Error;
 use std::fmt;
-use std::hash::Hasher;
 
 #[derive(Debug)]
 pub enum ParserError {

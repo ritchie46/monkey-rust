@@ -24,7 +24,7 @@ impl std::fmt::Display for Statement {
             Statement::Let(ident, e) => write!(f, "let {} = {};", ident, e),
             Statement::Return(e) => write!(f, "return {}", e),
             Statement::Expr(e) => write!(f, "{}", e),
-            Statement::Block(stmts) => f.write_str(&write_block(stmts)),
+            Statement::Block(stmts) => f.write_str(&fmt_block(stmts)),
             _ => f.write_str("not implemented yet"),
         }
     }
@@ -81,14 +81,14 @@ impl fmt::Display for Expression {
                 "if {} {{ {} }} else {{ {} }}",
                 condition,
                 consequence,
-                write_alternative_block(alternative)
+                fmt_alternative_block(alternative)
             ),
             Expression::FunctionLiteral {
                 args: parameters,
                 body,
-            } => f.write_str(&write_function_literal(parameters, body)),
+            } => f.write_str(&fmt_function_literal(parameters, body)),
             Expression::CallExpr { function, args } => {
-                f.write_str(&write_call_expr(function, args))
+                f.write_str(&fmt_call_expr(function, args))
             }
             _ => f.write_str("not impl"),
         }
@@ -169,7 +169,7 @@ impl Expression {
 
 // Helper functions for string formatting
 
-fn write_block(stmts: &Vec<Statement>) -> String {
+fn fmt_block(stmts: &Vec<Statement>) -> String {
     let mut s = String::new();
     for b in stmts {
         s.push_str(&format!("{}", b))
@@ -177,14 +177,14 @@ fn write_block(stmts: &Vec<Statement>) -> String {
     s
 }
 
-fn write_alternative_block(alt: &Option<Box<Statement>>) -> String {
+fn fmt_alternative_block(alt: &Option<Box<Statement>>) -> String {
     match alt {
         Some(s) => format!("{}", s),
         None => "pass".to_string(),
     }
 }
 
-fn format_comma_separated_args(s: &mut String, args: &Vec<Expression>) {
+fn fmt_comma_separated_args(s: &mut String, args: &Vec<Expression>) {
     for (i, p) in args.iter().enumerate() {
         if i == 0 {
             s.push_str(&format!("{}", p))
@@ -194,16 +194,16 @@ fn format_comma_separated_args(s: &mut String, args: &Vec<Expression>) {
     }
 }
 
-fn write_function_literal(parameters: &Vec<Expression>, body: &Statement) -> String {
+pub fn fmt_function_literal(args: &Vec<Expression>, body: &Statement) -> String {
     let mut s = "fn(".to_string();
-    format_comma_separated_args(&mut s, parameters);
+    fmt_comma_separated_args(&mut s, args);
     s.push_str(&format!(") {{ {} }}", body));
     s
 }
 
-fn write_call_expr(function: &Expression, args: &Vec<Expression>) -> String {
+fn fmt_call_expr(function: &Expression, args: &Vec<Expression>) -> String {
     let mut s = format!("{}(", function);
-    format_comma_separated_args(&mut s, args);
+    fmt_comma_separated_args(&mut s, args);
     s.push(')');
     s
 }

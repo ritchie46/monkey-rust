@@ -1,12 +1,35 @@
+use crate::ast::{fmt_function_literal, Expression, Statement};
+use crate::Env;
 use std::fmt;
+use std::rc::Rc;
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub enum Object {
     Int(i64),
     Bool(bool),
     Null,
     ReturnValue(Box<Object>),
     Error(String),
+    Function(Function),
+}
+
+#[derive(Debug, Clone)]
+pub struct Function {
+    args: Vec<Expression>, // Identifier
+    body: Statement,       // Blockstmt
+    env: Env,
+}
+
+impl PartialEq<Object> for Object {
+    fn eq(&self, other: &Object) -> bool {
+        match (self, other) {
+            (Object::Int(a), Object::Int(b)) => a == b,
+            (Object::Bool(a), Object::Bool(b)) => a == b,
+            (Object::Null, Object::Null) => true,
+            (Object::Error(a), Object::Error(b)) => a == b,
+            _ => false,
+        }
+    }
 }
 
 impl Object {
@@ -25,6 +48,14 @@ impl Object {
             _ => "null",
         }
     }
+
+    pub fn new_function(args: Vec<Expression>, body: Statement, env: &Env) -> Object {
+        Object::Function(Function {
+            args,
+            body,
+            env: Rc::clone(env),
+        })
+    }
 }
 
 impl fmt::Display for Object {
@@ -35,6 +66,9 @@ impl fmt::Display for Object {
             Object::Null => f.write_str("null"),
             Object::ReturnValue(obj) => write!(f, "{}", obj),
             Object::Error(s) => f.write_str(s),
+            Object::Function(func) => {
+                f.write_str(&fmt_function_literal(&func.args, &func.body))
+            }
             _ => f.write_str("not impl."),
         }
     }

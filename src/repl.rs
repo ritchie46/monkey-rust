@@ -1,8 +1,7 @@
 use crate::evaluator::eval_program;
 use crate::lexer::Lexer;
+use crate::object::environment::Environment;
 use crate::parser::Parser;
-use crate::token::TokenType;
-use crate::Environment;
 use std::io;
 use std::io::Write;
 

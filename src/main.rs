@@ -12,7 +12,7 @@ mod parser;
 mod repl;
 mod test;
 mod token;
-use object::environment::Environment;
+use object::environment::Env;
 use object::object::Object;
 
 fn main() {
