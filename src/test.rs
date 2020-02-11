@@ -286,8 +286,16 @@ mod eval_test {
 
     #[test]
     fn test_function_eval() {
-        let inputs = ["let add = fn(x, y) { x + y }; add(2, 2);"];
-        let outputs = [4];
+        let inputs = [
+            "let add = fn(x, y) { x + y }; add(2, 2);",
+            "let identity = fn(x) { x; }; identity(5);",
+            "let identity = fn(x) { return x; }; identity(5);",
+            "let double = fn(x) { x * 2; }; double(5);",
+            "let add = fn(x, y) { x + y; }; add(5, 5)",
+            "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));",
+            "fn(x) { x; }(5)",
+        ];
+        let outputs = [4, 5, 5, 10, 10, 20, 5];
         for (input, output) in inputs.iter().zip(&outputs) {
             let ev = evaluated(&input);
             assert_eq!(ev, Object::Int(*output))
