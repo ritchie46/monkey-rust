@@ -57,7 +57,8 @@ pub enum Expression {
         function: Box<Expression>, // FunctionLiteral
         args: Box<Vec<Expression>>,
     },
-    Some,
+    StringLiteral(String),
+    Some, // only for debugging purposes
 }
 
 impl fmt::Display for Expression {
@@ -90,6 +91,7 @@ impl fmt::Display for Expression {
             Expression::CallExpr { function, args } => {
                 f.write_str(&fmt_call_expr(function, args))
             }
+            Expression::StringLiteral(string) => write!(f, r#""{}""#, string),
             _ => f.write_str("not impl"),
         }
     }
@@ -164,6 +166,10 @@ impl Expression {
             args: Box::new(args),
         };
         Ok(expr)
+    }
+
+    pub fn new_string_literal(tkn: &Token) -> ParseResult<Expression> {
+        Ok(Expression::StringLiteral(tkn.literal.clone()))
     }
 }
 

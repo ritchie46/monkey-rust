@@ -86,6 +86,7 @@ impl<'a> Parser<'a> {
             TokenType::LParen => self.parse_grouped_expr(),
             TokenType::If => self.parse_if_expr(),
             TokenType::Function => self.parse_function_literal(),
+            TokenType::Str => self.parse_string_literal(),
             // Try to parse it and let evaluator define errors.
             _ => self.parse_prefix_expr(),
         }
@@ -384,5 +385,9 @@ impl<'a> Parser<'a> {
             ));
         }
         Ok(args)
+    }
+
+    fn parse_string_literal(&mut self) -> ParseResult<Expression> {
+        Expression::new_string_literal(&self.current_token)
     }
 }

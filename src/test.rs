@@ -170,6 +170,13 @@ mod parser_test {
             format!("{}", parsed.unwrap()[0])
         );
     }
+
+    #[test]
+    fn test_str_lit() {
+        let input = r#" "foo" "#;
+        let parsed = parse_program(&input);
+        assert_eq!(r#""foo""#, format!("{}", parsed.unwrap()[0]));
+    }
 }
 
 #[cfg(test)]
