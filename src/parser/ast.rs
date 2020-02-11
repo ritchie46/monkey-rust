@@ -1,5 +1,5 @@
-use crate::parser::ParseResult;
-use crate::token::Token;
+use super::parser::ParseResult;
+use crate::lexer::token::Token;
 use std::fmt;
 
 pub type Program = Vec<Statement>;

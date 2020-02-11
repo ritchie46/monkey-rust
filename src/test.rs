@@ -1,8 +1,8 @@
-use crate::ast::*;
+use crate::parser::ast::*;
 use crate::err::ParserError;
-use crate::lexer::Lexer;
-use crate::object::environment::Environment;
-use crate::parser::*;
+use crate::lexer::lexer::Lexer;
+use crate::eval::environment::Environment;
+use crate::parser::parser::*;
 
 fn parse_program(input: &str) -> Result<Program, ParserError> {
     let mut lex = Lexer::new(&input);

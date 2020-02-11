@@ -1,5 +1,5 @@
-use crate::ast::{fmt_function_literal, Expression, Statement};
-use crate::builtins::{Builtin, BuiltinFn};
+use crate::parser::ast::{fmt_function_literal, Expression, Statement};
+use crate::eval::builtins::{Builtin, BuiltinFn};
 use crate::Env;
 use std::fmt;
 use std::rc::Rc;

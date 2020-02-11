@@ -1,20 +1,24 @@
 #[macro_use]
 extern crate lazy_static;
-mod ast;
 mod err;
-mod evaluator;
-mod lexer;
-mod object {
+mod lexer {
+    pub mod lexer;
+    pub mod token;
+}
+mod eval {
     pub mod environment;
     pub mod object;
+    pub mod builtins;
+    pub mod evaluator;
 }
-mod builtins;
-mod parser;
+mod parser {
+    pub mod ast;
+    pub mod parser;
+}
 mod repl;
 mod test;
-mod token;
-use object::environment::Env;
-use object::object::Object;
+use eval::environment::Env;
+use eval::object::Object;
 
 fn main() {
     println!(

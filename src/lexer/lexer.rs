@@ -1,4 +1,4 @@
-use crate::token::{Token, TokenType, KEYWORDS};
+use crate::lexer::token::{Token, TokenType, KEYWORDS};
 
 pub struct Lexer<'a> {
     input: &'a [u8],

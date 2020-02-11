@@ -1,4 +1,4 @@
-use crate::token::TokenType;
+use crate::lexer::token::TokenType;
 use std::fmt;
 
 #[derive(Debug)]

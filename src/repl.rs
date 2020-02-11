@@ -1,7 +1,7 @@
-use crate::evaluator::eval_program;
-use crate::lexer::Lexer;
-use crate::object::environment::Environment;
-use crate::parser::Parser;
+use crate::eval::evaluator::eval_program;
+use crate::lexer::lexer::Lexer;
+use crate::eval::environment::Environment;
+use crate::parser::parser::Parser;
 use std::io;
 use std::io::Write;
 

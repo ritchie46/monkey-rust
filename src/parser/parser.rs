@@ -1,7 +1,7 @@
-use crate::ast::*;
+use crate::parser::ast::*;
 use crate::err::ParserError;
-use crate::lexer::Lexer;
-use crate::token::{Token, TokenType};
+use crate::lexer::lexer::Lexer;
+use crate::lexer::token::{Token, TokenType};
 use std::collections::{HashMap, HashSet};
 
 pub type ParseResult<T> = Result<T, ParserError>;
