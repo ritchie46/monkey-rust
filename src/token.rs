@@ -29,6 +29,7 @@ pub enum TokenType {
     Else,     // else
     Equal,    // ==
     NotEqual, // !=
+    Str,      // " "
 }
 
 #[derive(Debug, PartialEq, Clone)]

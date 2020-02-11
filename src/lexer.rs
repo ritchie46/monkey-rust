@@ -65,6 +65,7 @@ impl<'a> Lexer<'a> {
             '-' => new_token(Minus, Literal::Char(self.ch)),
             '*' => new_token(Asterix, Literal::Char(self.ch)),
             '/' => new_token(Slash, Literal::Char(self.ch)),
+            '"' => new_token(Str, Literal::String(self.read_str())),
             _ => {
                 if self.ch == 0 {
                     new_token(EOF, Literal::String("".to_string()))
@@ -116,6 +117,13 @@ impl<'a> Lexer<'a> {
             self.input[self.read_position()]
         }
     }
+
+    fn read_str(&mut self) -> String {
+        self.read_next_char(); // eat "
+        let s = self.read_until(&|c: u8| !(c as char == '"' || c == 0));
+        self.read_next_char(); // eat "
+        s
+    }
 }
 
 enum Literal {
@@ -159,14 +167,15 @@ mod test {
 
     #[test]
     fn test() {
-        let input = "
+        let input = r#"
         let five = 5;
         add = fn(x) {
         };
         !-/*<  >,
         return if else true false
         == !=
-        ";
+        "foo" "bA r7'"
+        "#;
 
         use TokenType::*;
         let valid = [
@@ -198,6 +207,8 @@ mod test {
             (False, "false"),
             (Equal, "=="),
             (NotEqual, "!="),
+            (Str, "foo"),
+            (Str, "bA r7'"),
             (EOF, ""),
         ];
 
@@ -207,7 +218,7 @@ mod test {
                 type_: *type_,
                 literal: literal.to_string(),
             };
-            assert_eq!(t, lex.next_token())
+            assert_eq!(lex.next_token(), t)
         }
     }
 }
