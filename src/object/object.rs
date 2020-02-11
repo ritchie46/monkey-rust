@@ -11,6 +11,7 @@ pub enum Object {
     ReturnValue(Box<Object>),
     Error(String),
     Function(Function),
+    String(String),
 }
 
 #[derive(Debug, Clone)]
@@ -27,6 +28,7 @@ impl PartialEq<Object> for Object {
             (Object::Bool(a), Object::Bool(b)) => a == b,
             (Object::Null, Object::Null) => true,
             (Object::Error(a), Object::Error(b)) => a == b,
+            (Object::String(a), Object::String(b)) => a == b,
             _ => false,
         }
     }
@@ -46,6 +48,7 @@ impl Object {
             Object::Int(_) => "int",
             Object::Bool(_) => "bool",
             Object::Error(_) => "err",
+            Object::String(_) => "str",
             _ => "null",
         }
     }
@@ -74,6 +77,7 @@ impl fmt::Display for Object {
             Object::Function(func) => {
                 f.write_str(&fmt_function_literal(&func.parameters, &func.body))
             }
+            Object::String(s) => f.write_str(s),
             _ => f.write_str("not impl."),
         }
     }

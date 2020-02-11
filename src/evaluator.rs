@@ -79,6 +79,7 @@ fn eval_expr(expr: &Expression, env: &Env) -> Object {
             function: fn_literal,
             args,
         } => eval_call_expr(fn_literal, args, env),
+        Expression::StringLiteral(s) => Object::String(s.clone()),
         _ => Object::Null,
     }
 }

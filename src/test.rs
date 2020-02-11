@@ -308,4 +308,14 @@ mod eval_test {
             assert_eq!(ev, Object::Int(*output))
         }
     }
+
+    #[test]
+    fn test_str_lit_eval() {
+        let inputs = [r#""foo""#, r#""foo bar ham""#];
+        let outputs = ["foo", "foo bar ham"];
+        for (input, output) in inputs.iter().zip(&outputs) {
+            let ev = evaluated(&input);
+            assert_eq!(ev, Object::String(output.to_string()))
+        }
+    }
 }
