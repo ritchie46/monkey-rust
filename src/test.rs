@@ -311,8 +311,8 @@ mod eval_test {
 
     #[test]
     fn test_str_lit_eval() {
-        let inputs = [r#""foo""#, r#""foo bar ham""#];
-        let outputs = ["foo", "foo bar ham"];
+        let inputs = [r#""foo""#, r#""foo bar ham""#, r#""foo" + "ham"#];
+        let outputs = ["foo", "foo bar ham", "fooham"];
         for (input, output) in inputs.iter().zip(&outputs) {
             let ev = evaluated(&input);
             assert_eq!(ev, Object::String(output.to_string()))
