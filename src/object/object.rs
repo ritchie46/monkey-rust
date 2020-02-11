@@ -1,4 +1,5 @@
 use crate::ast::{fmt_function_literal, Expression, Statement};
+use crate::builtins::{Builtin, BuiltinFn};
 use crate::Env;
 use std::fmt;
 use std::rc::Rc;
@@ -20,28 +21,6 @@ pub struct Function {
     pub parameters: Vec<Expression>, // Identifier
     pub body: Statement,             // Blockstmt
     env: Env,
-}
-
-pub type BuiltinFn = fn(Vec<Object>) -> Object;
-
-#[derive(Debug, Clone)]
-pub struct Builtin {
-    pub identifier: String,
-    pub function: BuiltinFn,
-}
-
-pub fn len(args: Vec<Object>) -> Object {
-    if args.len() != 1 {
-        return Object::new_error(&format!(
-            "wrong number of arguments. got={}, want=1",
-            args.len()
-        ));
-    }
-    let arg = &args[0];
-    match arg {
-        Object::String(s) => Object::Int(s.len() as i64),
-        _ => Object::new_error("invalid argument type for builtin: len()"),
-    }
 }
 
 impl PartialEq<Object> for Object {

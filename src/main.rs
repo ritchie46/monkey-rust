@@ -8,6 +8,7 @@ mod object {
     pub mod environment;
     pub mod object;
 }
+mod builtins;
 mod parser;
 mod repl;
 mod test;

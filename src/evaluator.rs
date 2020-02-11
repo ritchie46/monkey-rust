@@ -1,18 +1,9 @@
 use crate::ast::{Expression, Program, Statement};
+use crate::builtins::{len, Builtin, BuiltinFn, BUILTINS};
 use crate::object::environment::new_enclosed_environment;
-use crate::object::object::{len, Builtin, BuiltinFn, Function};
+use crate::object::object::Function;
 use crate::{Env, Object};
-use std::collections::HashMap;
-use std::fs::read_to_string;
 use std::rc::Rc;
-
-lazy_static! {
-    pub static ref BUILTINS: HashMap<String, BuiltinFn> = {
-        let mut m = HashMap::new();
-        m.insert("len".to_string(), len as BuiltinFn);
-        m
-    };
-}
 
 /// Run all statements and return last
 pub fn eval_program(program_ast: &Program, env: &Env) -> Object {
