@@ -31,19 +31,6 @@ lazy_static! {
         m.insert(TokenType::LParen, Precedence::Call);
         m
     };
-    static ref INFIX_OPS: HashSet<TokenType> = {
-        let mut s = HashSet::new();
-        s.insert(TokenType::Plus);
-        s.insert(TokenType::Minus);
-        s.insert(TokenType::Slash);
-        s.insert(TokenType::Asterix);
-        s.insert(TokenType::Equal);
-        s.insert(TokenType::NotEqual);
-        s.insert(TokenType::LT);
-        s.insert(TokenType::GT);
-        s.insert(TokenType::LParen);
-        s
-    };
 }
 
 /// Get precedence of next token
@@ -208,7 +195,7 @@ impl<'a> Parser<'a> {
         let mut left = self.call_prefix_fn()?;
 
         while !self.peek_tkn_eq(TokenType::Semicolon) && prec < peek_precedence(&self) {
-            if INFIX_OPS.contains(&self.peek_token.type_) {
+            if TYPE2PREC.contains_key(&self.peek_token.type_) {
                 self.next_token();
                 left = self.call_infix_fn(left.clone())?;
             }
