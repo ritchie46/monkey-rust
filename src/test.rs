@@ -182,7 +182,7 @@ mod parser_test {
 #[cfg(test)]
 mod eval_test {
     use super::*;
-    use crate::evaluator::eval_program;
+    use crate::eval::evaluator::eval_program;
     use crate::Object;
 
     fn evaluated(input: &str) -> Object {

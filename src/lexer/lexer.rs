@@ -66,6 +66,8 @@ impl<'a> Lexer<'a> {
             '*' => new_token(Asterix, Literal::Char(self.ch)),
             '/' => new_token(Slash, Literal::Char(self.ch)),
             '"' => new_token(Str, Literal::String(self.read_str())),
+            '[' => new_token(LBracket, Literal::Char(self.ch)),
+            ']' => new_token(RBracket, Literal::Char(self.ch)),
             _ => {
                 if self.ch == 0 {
                     new_token(EOF, Literal::String("".to_string()))
@@ -175,6 +177,7 @@ mod test {
         == !=
         "foo" "bA r7'"
         "foo"+"bar"
+        []
         "#;
 
         use TokenType::*;
@@ -212,6 +215,8 @@ mod test {
             (Str, "foo"),
             (Plus, "+"),
             (Str, "bar"),
+            (LBracket, "["),
+            (RBracket, "]"),
             (EOF, ""),
         ];
 
