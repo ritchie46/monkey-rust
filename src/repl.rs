@@ -21,7 +21,11 @@ pub fn start() {
 
         let mut lex = Lexer::new(&input);
         let mut par = Parser::new(&mut lex);
-        let program_ast = par.parse_program().unwrap();
-        println!("{}", eval_program(&program_ast, &mut env))
+        let parse_result = par.parse_program();
+
+        match parse_result {
+            Ok(program_ast) => println!("{}", eval_program(&program_ast, &mut env)),
+            Err(e) => println!("{}", e),
+        }
     }
 }

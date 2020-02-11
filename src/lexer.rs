@@ -121,7 +121,6 @@ impl<'a> Lexer<'a> {
     fn read_str(&mut self) -> String {
         self.read_next_char(); // eat "
         let s = self.read_until(&|c: u8| !(c as char == '"' || c == 0));
-        self.read_next_char(); // eat "
         s
     }
 }
@@ -175,6 +174,7 @@ mod test {
         return if else true false
         == !=
         "foo" "bA r7'"
+        "foo"+"bar"
         "#;
 
         use TokenType::*;
@@ -209,6 +209,9 @@ mod test {
             (NotEqual, "!="),
             (Str, "foo"),
             (Str, "bA r7'"),
+            (Str, "foo"),
+            (Plus, "+"),
+            (Str, "bar"),
             (EOF, ""),
         ];
 

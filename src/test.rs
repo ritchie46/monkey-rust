@@ -311,11 +311,26 @@ mod eval_test {
 
     #[test]
     fn test_str_lit_eval() {
-        let inputs = [r#""foo""#, r#""foo bar ham""#, r#""foo" + "ham"#];
-        let outputs = ["foo", "foo bar ham", "fooham"];
+        let inputs = [
+            r#""foo""#,
+            r#""foo bar ham""#,
+            r#""foo" + "ham"#,
+            r#""foo"+"ham"#,
+        ];
+        let outputs = ["foo", "foo bar ham", "fooham", "fooham"];
         for (input, output) in inputs.iter().zip(&outputs) {
             let ev = evaluated(&input);
             assert_eq!(ev, Object::String(output.to_string()))
+        }
+    }
+
+    #[test]
+    fn test_builtin() {
+        let inputs = [r#"len("bar")"#, r#"len("foo" + "bar")"#];
+        let outputs = [3, 6];
+        for (input, output) in inputs.iter().zip(&outputs) {
+            let ev = evaluated(&input);
+            assert_eq!(ev, Object::Int(*output))
         }
     }
 }

@@ -1,9 +1,18 @@
 use crate::ast::{Expression, Program, Statement};
 use crate::object::environment::new_enclosed_environment;
-use crate::object::object::Function;
+use crate::object::object::{len, Builtin, BuiltinFn, Function};
 use crate::{Env, Object};
+use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::rc::Rc;
+
+lazy_static! {
+    pub static ref BUILTINS: HashMap<String, BuiltinFn> = {
+        let mut m = HashMap::new();
+        m.insert("len".to_string(), len as BuiltinFn);
+        m
+    };
+}
 
 /// Run all statements and return last
 pub fn eval_program(program_ast: &Program, env: &Env) -> Object {
@@ -189,23 +198,25 @@ fn eval_identifier(identifier: &str, env: &Env) -> Object {
     let env = env.borrow();
 
     let val = env.get(identifier);
-    val.unwrap_or(Object::new_error(&format!(
-        "identifier not found: {}",
-        identifier
-    )))
-    .clone() // clone from environment
+
+    if val.is_some() {
+        return val.unwrap();
+    }
+    let builtin = BUILTINS.get(identifier);
+
+    if builtin.is_none() {
+        return Object::new_error(&format!("identifier not found a: {}", identifier))
+            .clone(); // clone from environment
+    }
+    Object::new_builtin(identifier, *builtin.unwrap())
 }
 
 fn eval_call_expr(function: &Expression, args: &Vec<Expression>, env: &Env) -> Object {
     let function_ident = eval_expr(function, env);
 
-    let f: Function = match function_ident {
-        Object::Error(_) => return function_ident,
-        Object::Function(f) => f,
-        _ => {
-            return panic!("eval_call_expr called with Expression that is not a CallExpr")
-        }
-    };
+    if function_ident.get_type() == "err" {
+        return function_ident;
+    }
 
     let arg_objs = eval_expressions(args, env);
     if arg_objs.len() == 1 {
@@ -213,7 +224,14 @@ fn eval_call_expr(function: &Expression, args: &Vec<Expression>, env: &Env) -> O
             return arg_objs[0].clone();
         }
     }
-    apply_function(&f, &arg_objs, env)
+    match function_ident {
+        Object::Function(f) => apply_function(&f, &arg_objs, env),
+        Object::Builtin(b) => {
+            let f = b.function;
+            f(arg_objs)
+        }
+        _ => Object::new_error("function not defined"),
+    }
 }
 
 fn eval_expressions(exprs: &Vec<Expression>, env: &Env) -> Vec<Object> {

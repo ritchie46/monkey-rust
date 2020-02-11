@@ -12,6 +12,7 @@ pub enum Object {
     Error(String),
     Function(Function),
     String(String),
+    Builtin(Builtin),
 }
 
 #[derive(Debug, Clone)]
@@ -19,6 +20,28 @@ pub struct Function {
     pub parameters: Vec<Expression>, // Identifier
     pub body: Statement,             // Blockstmt
     env: Env,
+}
+
+pub type BuiltinFn = fn(Vec<Object>) -> Object;
+
+#[derive(Debug, Clone)]
+pub struct Builtin {
+    pub identifier: String,
+    pub function: BuiltinFn,
+}
+
+pub fn len(args: Vec<Object>) -> Object {
+    if args.len() != 1 {
+        return Object::new_error(&format!(
+            "wrong number of arguments. got={}, want=1",
+            args.len()
+        ));
+    }
+    let arg = &args[0];
+    match arg {
+        Object::String(s) => Object::Int(s.len() as i64),
+        _ => Object::new_error("invalid argument type for builtin: len()"),
+    }
 }
 
 impl PartialEq<Object> for Object {
@@ -64,6 +87,14 @@ impl Object {
             env: Rc::clone(env),
         })
     }
+
+    pub fn new_builtin(identifier: &str, function: BuiltinFn) -> Object {
+        let builtin = Builtin {
+            identifier: identifier.to_string(),
+            function,
+        };
+        Object::Builtin(builtin)
+    }
 }
 
 impl fmt::Display for Object {
@@ -78,6 +109,7 @@ impl fmt::Display for Object {
                 f.write_str(&fmt_function_literal(&func.parameters, &func.body))
             }
             Object::String(s) => f.write_str(s),
+            Object::Builtin(b) => write!(f, "builtin: {}", b.identifier),
             _ => f.write_str("not impl."),
         }
     }
