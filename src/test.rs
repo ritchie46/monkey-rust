@@ -344,5 +344,9 @@ mod eval_test {
             let ev = evaluated(&input);
             assert_eq!(&format!("{}", ev), input);
         }
+
+        let input = "let a = [1, 2]; a[0]";
+        let parsed = &parse_program(input).unwrap();
+        assert_eq!("a[0]", format!("{}", parsed[1]))
     }
 }

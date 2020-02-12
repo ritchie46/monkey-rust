@@ -7,6 +7,7 @@ pub enum ParserError {
     IdentifierExpected,
     AssignmentExpected(String),
     NoParserFor(TokenType),
+    Expected(String),
 }
 
 impl ParserError {

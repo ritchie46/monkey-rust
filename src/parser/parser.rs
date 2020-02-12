@@ -1,4 +1,5 @@
 use crate::err::ParserError;
+use crate::err::ParserError::Expected;
 use crate::eval::object::Object;
 use crate::lexer::lexer::Lexer;
 use crate::lexer::token::{Token, TokenType};
@@ -16,6 +17,7 @@ pub enum Precedence {
     Product,
     Prefix,
     Call,
+    Index,
 }
 
 lazy_static! {
@@ -30,6 +32,7 @@ lazy_static! {
         m.insert(TokenType::Slash, Precedence::Product);
         m.insert(TokenType::Asterix, Precedence::Product);
         m.insert(TokenType::LParen, Precedence::Call);
+        m.insert(TokenType::LBracket, Precedence::Index);
         m
     };
 }
@@ -92,6 +95,7 @@ impl<'a> Parser<'a> {
             TokenType::LT => self.parse_infix_expr(left),
             TokenType::GT => self.parse_infix_expr(left),
             TokenType::LParen => self.parse_call_expr(left), // left is fn
+            TokenType::LBracket => self.parse_index_expr(left),
             // Try to parse it and let evaluator define errors.
             _ => self.parse_infix_expr(left),
         }
@@ -393,5 +397,14 @@ impl<'a> Parser<'a> {
 
     fn parse_string_literal(&mut self) -> ParseResult<Expression> {
         Expression::new_string_literal(&self.current_token)
+    }
+
+    fn parse_index_expr(&mut self, left: Expression) -> ParseResult<Expression> {
+        self.next_token();
+        let index = self.parse_expr(Precedence::Lowest)?;
+        if !self.expect_and_consume_token(TokenType::RBracket) {
+            return Err(ParserError::Expected("]".to_string()));
+        }
+        Expression::new_index_expr(left, index)
     }
 }

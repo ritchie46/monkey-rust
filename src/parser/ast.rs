@@ -60,6 +60,10 @@ pub enum Expression {
     },
     StringLiteral(String),
     ArrayLiteral(Box<Vec<Expression>>),
+    IndexExpr {
+        left: Box<Expression>, // array, hashmap
+        index: Box<Expression>,
+    },
     Some, // only for debugging purposes
 }
 
@@ -97,6 +101,7 @@ impl fmt::Display for Expression {
             Expression::ArrayLiteral(expressions) => {
                 f.write_str(&format::fmt_array_literal(expressions))
             }
+            Expression::IndexExpr { left, index } => write!(f, "{}[{}]", left, index),
             _ => f.write_str("not impl"),
         }
     }
@@ -179,5 +184,15 @@ impl Expression {
 
     pub fn new_array_literal(expr: Vec<Expression>) -> ParseResult<Expression> {
         Ok(Expression::ArrayLiteral(Box::new(expr)))
+    }
+
+    pub fn new_index_expr(
+        left: Expression,
+        index: Expression,
+    ) -> ParseResult<Expression> {
+        Ok(Expression::IndexExpr {
+            left: Box::new(left),
+            index: Box::new(index),
+        })
     }
 }
