@@ -1,6 +1,7 @@
 use super::parser::ParseResult;
 use crate::format;
 use crate::lexer::token::Token;
+use std::collections::HashMap;
 use std::fmt;
 
 pub type Program = Vec<Statement>;
@@ -64,6 +65,10 @@ pub enum Expression {
         left: Box<Expression>, // array, hashmap
         index: Box<Expression>,
     },
+    HashLiteral {
+        keys: Box<Vec<Expression>>,
+        values: Box<Vec<Expression>>,
+    },
     Some, // only for debugging purposes
 }
 
@@ -102,6 +107,9 @@ impl fmt::Display for Expression {
                 f.write_str(&format::fmt_array_literal(expressions))
             }
             Expression::IndexExpr { left, index } => write!(f, "{}[{}]", left, index),
+            Expression::HashLiteral { keys, values } => {
+                f.write_str(&format::fmt_hash_literal(keys, values))
+            }
             _ => f.write_str("not impl"),
         }
     }
@@ -193,6 +201,16 @@ impl Expression {
         Ok(Expression::IndexExpr {
             left: Box::new(left),
             index: Box::new(index),
+        })
+    }
+
+    pub fn new_hash_literal(
+        keys: Vec<Expression>,
+        values: Vec<Expression>,
+    ) -> ParseResult<Expression> {
+        Ok(Expression::HashLiteral {
+            keys: Box::new(keys),
+            values: Box::new(values),
         })
     }
 }

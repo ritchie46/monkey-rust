@@ -79,6 +79,7 @@ impl<'a> Parser<'a> {
             TokenType::Function => self.parse_function_literal(),
             TokenType::Str => self.parse_string_literal(),
             TokenType::LBracket => self.parse_array_literal(),
+            TokenType::LBrace => self.parse_hash_literal(),
             // Try to parse it and let evaluator define errors.
             _ => self.parse_prefix_expr(),
         }
@@ -406,5 +407,34 @@ impl<'a> Parser<'a> {
             return Err(ParserError::Expected("]".to_string()));
         }
         Expression::new_index_expr(left, index)
+    }
+
+    fn parse_hash_literal(&mut self) -> ParseResult<Expression> {
+        let mut keys = vec![];
+        let mut values = vec![];
+
+        while !self.peek_tkn_eq(TokenType::RBrace) {
+            self.next_token();
+
+            let key = self.parse_expr(Precedence::Lowest)?;
+            if !self.expect_and_consume_token(TokenType::Colon) {
+                return Err(ParserError::Expected(":".to_string()));
+            };
+
+            self.next_token();
+            let value = self.parse_expr(Precedence::Lowest)?;
+            keys.push(key);
+            values.push(value);
+
+            if !self.peek_tkn_eq(TokenType::RBrace)
+                && !self.expect_and_consume_token(TokenType::Comma)
+            {
+                return Err(ParserError::Expected(",".to_string()));
+            }
+        }
+        if !self.expect_and_consume_token(TokenType::RBrace) {
+            return Err(ParserError::Expected("}".to_string()));
+        }
+        Expression::new_hash_literal(keys, values)
     }
 }

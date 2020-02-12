@@ -363,4 +363,20 @@ mod eval_test {
             assert_eq!(ev, Object::Int(*output))
         }
     }
+
+    #[test]
+    fn test_hash() {
+        let inputs = [
+            r#"{1: "one", 2: "two"}"#,
+            r#"{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}"#,
+        ];
+        let outputs = [
+            r#"{1: "one", 2: "two"}"#,
+            r#"{"one": (0 + 1), "two": (10 - 8), "three": (15 / 5)}"#,
+        ];
+        for (input, output) in inputs.iter().zip(&outputs) {
+            let parsed = &parse_program(&input).unwrap()[0];
+            assert_eq!(&format! {"{}", parsed}, output);
+        }
+    }
 }

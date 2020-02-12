@@ -48,3 +48,16 @@ pub fn fmt_array_literal<T: fmt::Display>(val: &[T]) -> String {
     s.push(']');
     s
 }
+
+pub fn fmt_hash_literal<T: fmt::Display>(keys: &[T], values: &[T]) -> String {
+    let mut s = "{".to_string();
+    let last = keys.len() - 1;
+    for (i, (k, v)) in keys.iter().zip(values).enumerate() {
+        s.push_str(&format!("{}: {}", k, v));
+        if i != last {
+            s.push_str(", ")
+        }
+    }
+    s.push('}');
+    s
+}
