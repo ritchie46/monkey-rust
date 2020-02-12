@@ -1,5 +1,6 @@
 use crate::eval::builtins::{Builtin, BuiltinFn};
-use crate::parser::ast::{fmt_function_literal, Expression, Statement};
+use crate::format;
+use crate::parser::ast::{Expression, Statement};
 use crate::Env;
 use std::fmt;
 use std::rc::Rc;
@@ -14,6 +15,7 @@ pub enum Object {
     Function(Function),
     String(String),
     Builtin(Builtin),
+    Array(Box<Vec<Object>>),
 }
 
 #[derive(Debug, Clone)]
@@ -75,6 +77,10 @@ impl Object {
         };
         Object::Builtin(builtin)
     }
+
+    pub fn new_array(values: Vec<Object>) -> Object {
+        Object::Array(Box::new(values))
+    }
 }
 
 impl fmt::Display for Object {
@@ -86,10 +92,11 @@ impl fmt::Display for Object {
             Object::ReturnValue(obj) => write!(f, "{}", obj),
             Object::Error(s) => f.write_str(s),
             Object::Function(func) => {
-                f.write_str(&fmt_function_literal(&func.parameters, &func.body))
+                f.write_str(&format::fmt_function_literal(&func.parameters, &func.body))
             }
             Object::String(s) => write!(f, r#""{}""#, s),
             Object::Builtin(b) => write!(f, "builtin: {}", b.identifier),
+            Object::Array(values) => f.write_str(&format::fmt_array_literal(values)),
             _ => f.write_str("not impl."),
         }
     }

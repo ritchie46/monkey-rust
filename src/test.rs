@@ -338,7 +338,10 @@ mod eval_test {
     fn test_array() {
         let inputs = ["[1, 2, 3, 4]", r#"["foo", 1, false]"#];
         for (input, output) in inputs.iter().zip(&inputs) {
-            let ev = &parse_program(&input).unwrap()[0];
+            let parsed = &parse_program(&input).unwrap()[0];
+            assert_eq!(&format!("{}", parsed), input);
+
+            let ev = evaluated(&input);
             assert_eq!(&format!("{}", ev), input);
         }
     }

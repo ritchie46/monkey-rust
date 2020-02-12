@@ -15,6 +15,7 @@ mod parser {
     pub mod ast;
     pub mod parser;
 }
+mod format;
 mod repl;
 mod test;
 use eval::environment::Env;

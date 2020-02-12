@@ -1,4 +1,5 @@
 use super::parser::ParseResult;
+use crate::format;
 use crate::lexer::token::Token;
 use std::fmt;
 
@@ -24,7 +25,7 @@ impl std::fmt::Display for Statement {
             Statement::Let(ident, e) => write!(f, "let {} = {};", ident, e),
             Statement::Return(e) => write!(f, "return {}", e),
             Statement::Expr(e) => write!(f, "{}", e),
-            Statement::Block(stmts) => f.write_str(&fmt_block(stmts)),
+            Statement::Block(stmts) => f.write_str(&format::fmt_block(stmts)),
             _ => f.write_str("not implemented yet"),
         }
     }
@@ -83,18 +84,18 @@ impl fmt::Display for Expression {
                 "if {} {{ {} }} else {{ {} }}",
                 condition,
                 consequence,
-                fmt_alternative_block(alternative)
+                format::fmt_alternative_block(alternative)
             ),
             Expression::FunctionLiteral {
                 parameters: parameters,
                 body,
-            } => f.write_str(&fmt_function_literal(parameters, body)),
+            } => f.write_str(&format::fmt_function_literal(parameters, body)),
             Expression::CallExpr { function, args } => {
-                f.write_str(&fmt_call_expr(function, args))
+                f.write_str(&format::fmt_call_expr(function, args))
             }
             Expression::StringLiteral(string) => write!(f, r#""{}""#, string),
             Expression::ArrayLiteral(expressions) => {
-                f.write_str(&fmt_array_literal(expressions))
+                f.write_str(&format::fmt_array_literal(expressions))
             }
             _ => f.write_str("not impl"),
         }
@@ -179,52 +180,4 @@ impl Expression {
     pub fn new_array_literal(expr: Vec<Expression>) -> ParseResult<Expression> {
         Ok(Expression::ArrayLiteral(Box::new(expr)))
     }
-}
-
-// Helper functions for string formatting
-
-fn fmt_block(stmts: &Vec<Statement>) -> String {
-    let mut s = String::new();
-    for b in stmts {
-        s.push_str(&format!("{}", b))
-    }
-    s
-}
-
-fn fmt_alternative_block(alt: &Option<Box<Statement>>) -> String {
-    match alt {
-        Some(s) => format!("{}", s),
-        None => "pass".to_string(),
-    }
-}
-
-fn fmt_comma_separated_expr(s: &mut String, args: &Vec<Expression>) {
-    for (i, p) in args.iter().enumerate() {
-        if i == 0 {
-            s.push_str(&format!("{}", p))
-        } else {
-            s.push_str(&format!(", {}", p))
-        }
-    }
-}
-
-pub fn fmt_function_literal(args: &Vec<Expression>, body: &Statement) -> String {
-    let mut s = "fn(".to_string();
-    fmt_comma_separated_expr(&mut s, args);
-    s.push_str(&format!(") {{ {} }}", body));
-    s
-}
-
-fn fmt_call_expr(function: &Expression, args: &Vec<Expression>) -> String {
-    let mut s = format!("{}(", function);
-    fmt_comma_separated_expr(&mut s, args);
-    s.push(')');
-    s
-}
-
-fn fmt_array_literal(val: &Vec<Expression>) -> String {
-    let mut s = "[".to_string();
-    fmt_comma_separated_expr(&mut s, val);
-    s.push(']');
-    s
 }

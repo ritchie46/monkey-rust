@@ -79,6 +79,7 @@ fn eval_expr(expr: &Expression, env: &Env) -> Object {
             args,
         } => eval_call_expr(fn_literal, args, env),
         Expression::StringLiteral(s) => Object::String(s.clone()),
+        Expression::ArrayLiteral(expressions) => eval_array_literal(expressions, env),
         _ => Object::Null,
     }
 }
@@ -201,7 +202,7 @@ fn eval_identifier(identifier: &str, env: &Env) -> Object {
     Object::new_builtin(identifier, *builtin.unwrap())
 }
 
-fn eval_call_expr(function: &Expression, args: &Vec<Expression>, env: &Env) -> Object {
+fn eval_call_expr(function: &Expression, args: &[Expression], env: &Env) -> Object {
     let function_ident = eval_expr(function, env);
 
     if function_ident.get_type() == "err" {
@@ -224,7 +225,7 @@ fn eval_call_expr(function: &Expression, args: &Vec<Expression>, env: &Env) -> O
     }
 }
 
-fn eval_expressions(exprs: &Vec<Expression>, env: &Env) -> Vec<Object> {
+fn eval_expressions(exprs: &[Expression], env: &Env) -> Vec<Object> {
     let mut iter = exprs.iter().map(|expr| eval_expr(expr, env));
 
     let mut objects: Vec<Object> = vec![];
@@ -262,4 +263,9 @@ fn create_function_env(func: &Function, args: &[Object], env: &Env) -> Env {
         }
     }
     env
+}
+
+fn eval_array_literal(exprs: &[Expression], env: &Env) -> Object {
+    let vals = eval_expressions(exprs, env);
+    Object::new_array(vals)
 }
