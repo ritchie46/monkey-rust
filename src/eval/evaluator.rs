@@ -1,7 +1,7 @@
-use crate::parser::ast::{Expression, Program, Statement};
 use crate::eval::builtins::{len, Builtin, BuiltinFn, BUILTINS};
 use crate::eval::environment::new_enclosed_environment;
 use crate::eval::object::Function;
+use crate::parser::ast::{Expression, Program, Statement};
 use crate::{Env, Object};
 
 /// Run all statements and return last

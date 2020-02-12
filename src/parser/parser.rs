@@ -1,7 +1,8 @@
-use crate::parser::ast::*;
 use crate::err::ParserError;
+use crate::eval::object::Object;
 use crate::lexer::lexer::Lexer;
 use crate::lexer::token::{Token, TokenType};
+use crate::parser::ast::*;
 use std::collections::{HashMap, HashSet};
 
 pub type ParseResult<T> = Result<T, ParserError>;
@@ -74,6 +75,7 @@ impl<'a> Parser<'a> {
             TokenType::If => self.parse_if_expr(),
             TokenType::Function => self.parse_function_literal(),
             TokenType::Str => self.parse_string_literal(),
+            TokenType::LBracket => self.parse_array_literal(),
             // Try to parse it and let evaluator define errors.
             _ => self.parse_prefix_expr(),
         }
@@ -317,32 +319,47 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_function_params(&mut self) -> ParseResult<Vec<Expression>> {
-        let mut identifiers: Vec<Expression> = vec![];
+        self.parse_comma_separated_expressions(TokenType::RParen)
+    }
 
-        if self.peek_tkn_eq(TokenType::RParen) {
+    fn parse_array_literal(&mut self) -> ParseResult<Expression> {
+        let expr = self.parse_comma_separated_expressions(TokenType::RBracket)?;
+        Expression::new_array_literal(expr)
+    }
+
+    /// Parse comma separated expressions ended by TokenType
+    fn parse_comma_separated_expressions(
+        &mut self,
+        end_tkn: TokenType,
+    ) -> ParseResult<Vec<Expression>> {
+        let mut expressions: Vec<Expression> = vec![];
+
+        if self.peek_tkn_eq(end_tkn) {
             self.next_token();
-            // return empty params vector
-            return Ok(identifiers);
+            // return empty expr vector
+            return Ok(expressions);
         }
         self.next_token();
 
-        let ident = Expression::new_identifier(&self.current_token)?;
-        identifiers.push(ident);
+        let expr = self.parse_expr(Precedence::Lowest)?;
+
+        expressions.push(expr);
 
         while self.peek_tkn_eq(TokenType::Comma) {
             // skip comma
             self.next_token();
             self.next_token();
-            let ident = Expression::new_identifier(&self.current_token)?;
-            identifiers.push(ident);
+            let expr = self.parse_expr(Precedence::Lowest)?;
+            expressions.push(expr);
         }
 
-        if !self.expect_and_consume_token(TokenType::RParen) {
-            return Err(ParserError::CouldNotParse(
-                "missing right paren in function literal ')'".to_string(),
-            ));
+        if !self.expect_and_consume_token(end_tkn) {
+            return Err(ParserError::CouldNotParse(format!(
+                "missing ending token: {:?}",
+                end_tkn
+            )));
         }
-        Ok(identifiers)
+        Ok(expressions)
     }
 
     fn parse_call_expr(&mut self, function: Expression) -> ParseResult<Expression> {

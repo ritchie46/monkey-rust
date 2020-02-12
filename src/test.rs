@@ -1,7 +1,7 @@
-use crate::parser::ast::*;
 use crate::err::ParserError;
-use crate::lexer::lexer::Lexer;
 use crate::eval::environment::Environment;
+use crate::lexer::lexer::Lexer;
+use crate::parser::ast::*;
 use crate::parser::parser::*;
 
 fn parse_program(input: &str) -> Result<Program, ParserError> {
@@ -331,6 +331,15 @@ mod eval_test {
         for (input, output) in inputs.iter().zip(&outputs) {
             let ev = evaluated(&input);
             assert_eq!(ev, Object::Int(*output))
+        }
+    }
+
+    #[test]
+    fn test_array() {
+        let inputs = ["[1, 2, 3, 4]", r#"["foo", 1, false]"#];
+        for (input, output) in inputs.iter().zip(&inputs) {
+            let ev = &parse_program(&input).unwrap()[0];
+            assert_eq!(&format!("{}", ev), input);
         }
     }
 }

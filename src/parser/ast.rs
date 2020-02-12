@@ -58,6 +58,7 @@ pub enum Expression {
         args: Box<Vec<Expression>>,
     },
     StringLiteral(String),
+    ArrayLiteral(Box<Vec<Expression>>),
     Some, // only for debugging purposes
 }
 
@@ -92,6 +93,9 @@ impl fmt::Display for Expression {
                 f.write_str(&fmt_call_expr(function, args))
             }
             Expression::StringLiteral(string) => write!(f, r#""{}""#, string),
+            Expression::ArrayLiteral(expressions) => {
+                f.write_str(&fmt_array_literal(expressions))
+            }
             _ => f.write_str("not impl"),
         }
     }
@@ -171,6 +175,10 @@ impl Expression {
     pub fn new_string_literal(tkn: &Token) -> ParseResult<Expression> {
         Ok(Expression::StringLiteral(tkn.literal.clone()))
     }
+
+    pub fn new_array_literal(expr: Vec<Expression>) -> ParseResult<Expression> {
+        Ok(Expression::ArrayLiteral(Box::new(expr)))
+    }
 }
 
 // Helper functions for string formatting
@@ -190,7 +198,7 @@ fn fmt_alternative_block(alt: &Option<Box<Statement>>) -> String {
     }
 }
 
-fn fmt_comma_separated_args(s: &mut String, args: &Vec<Expression>) {
+fn fmt_comma_separated_expr(s: &mut String, args: &Vec<Expression>) {
     for (i, p) in args.iter().enumerate() {
         if i == 0 {
             s.push_str(&format!("{}", p))
@@ -202,14 +210,21 @@ fn fmt_comma_separated_args(s: &mut String, args: &Vec<Expression>) {
 
 pub fn fmt_function_literal(args: &Vec<Expression>, body: &Statement) -> String {
     let mut s = "fn(".to_string();
-    fmt_comma_separated_args(&mut s, args);
+    fmt_comma_separated_expr(&mut s, args);
     s.push_str(&format!(") {{ {} }}", body));
     s
 }
 
 fn fmt_call_expr(function: &Expression, args: &Vec<Expression>) -> String {
     let mut s = format!("{}(", function);
-    fmt_comma_separated_args(&mut s, args);
+    fmt_comma_separated_expr(&mut s, args);
     s.push(')');
+    s
+}
+
+fn fmt_array_literal(val: &Vec<Expression>) -> String {
+    let mut s = "[".to_string();
+    fmt_comma_separated_expr(&mut s, val);
+    s.push(']');
     s
 }

@@ -1,5 +1,5 @@
-use crate::parser::ast::{fmt_function_literal, Expression, Statement};
 use crate::eval::builtins::{Builtin, BuiltinFn};
+use crate::parser::ast::{fmt_function_literal, Expression, Statement};
 use crate::Env;
 use std::fmt;
 use std::rc::Rc;
@@ -51,6 +51,7 @@ impl Object {
             Object::Bool(_) => "bool",
             Object::Error(_) => "err",
             Object::String(_) => "str",
+            Object::Builtin(_) => "builtin",
             _ => "null",
         }
     }
@@ -87,7 +88,7 @@ impl fmt::Display for Object {
             Object::Function(func) => {
                 f.write_str(&fmt_function_literal(&func.parameters, &func.body))
             }
-            Object::String(s) => f.write_str(s),
+            Object::String(s) => write!(f, r#""{}""#, s),
             Object::Builtin(b) => write!(f, "builtin: {}", b.identifier),
             _ => f.write_str("not impl."),
         }

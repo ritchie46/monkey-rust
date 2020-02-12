@@ -6,10 +6,10 @@ mod lexer {
     pub mod token;
 }
 mod eval {
-    pub mod environment;
-    pub mod object;
     pub mod builtins;
+    pub mod environment;
     pub mod evaluator;
+    pub mod object;
 }
 mod parser {
     pub mod ast;
