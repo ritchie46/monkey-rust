@@ -54,6 +54,7 @@ impl Object {
             Object::Error(_) => "err",
             Object::String(_) => "str",
             Object::Builtin(_) => "builtin",
+            Object::Array(_) => "array",
             _ => "null",
         }
     }
@@ -80,6 +81,34 @@ impl Object {
 
     pub fn new_array(values: Vec<Object>) -> Object {
         Object::Array(Box::new(values))
+    }
+
+    pub fn index_array(&self, index: i64) -> Object {
+        let a = match self {
+            Object::Array(a) => a,
+            o => {
+                return Object::new_error(&format!(
+                    "index operator not supported on: {}",
+                    o
+                ))
+            }
+        };
+
+        let len = a.len() as i64;
+
+        let i = if index >= 0 && index < len {
+            index as usize
+        }
+        // negative indexing
+        else if index < 0 && index.abs() <= len {
+            (len + index) as usize
+        } else {
+            return Object::new_error(&format!(
+                "index value outside the array's range: {}, index: {}",
+                len, index
+            ));
+        };
+        a[i].clone()
     }
 }
 

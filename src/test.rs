@@ -347,6 +347,19 @@ mod eval_test {
 
         let input = "let a = [1, 2]; a[0]";
         let parsed = &parse_program(input).unwrap();
-        assert_eq!("a[0]", format!("{}", parsed[1]))
+        assert_eq!("a[0]", format!("{}", parsed[1]));
+
+        let inputs = [
+            "[1, 2, 3][0]",
+            "[1, 2, 3][1]",
+            "[1, 2, 3][2]",
+            "let i = 0; [1][i];",
+            "[1, 2, 3][-1]",
+        ];
+        let outputs = [1, 2, 3, 1, 3];
+        for (input, output) in inputs.iter().zip(&outputs) {
+            let ev = evaluated(&input);
+            assert_eq!(ev, Object::Int(*output))
+        }
     }
 }

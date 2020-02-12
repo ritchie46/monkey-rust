@@ -22,7 +22,7 @@ pub fn eval_program(program_ast: &Program, env: &Env) -> Object {
     stmts_executed.pop().unwrap()
 }
 
-fn eval_block_stmt(block: &Vec<Statement>, env: &Env) -> Object {
+fn eval_block_stmt(block: &[Statement], env: &Env) -> Object {
     let mut result: Object = Object::Null;
     for stmt in block {
         result = eval_stmt(stmt, env);
@@ -80,6 +80,7 @@ fn eval_expr(expr: &Expression, env: &Env) -> Object {
         } => eval_call_expr(fn_literal, args, env),
         Expression::StringLiteral(s) => Object::String(s.clone()),
         Expression::ArrayLiteral(expressions) => eval_array_literal(expressions, env),
+        Expression::IndexExpr { left, index } => eval_index_expr(left, index, env),
         _ => Object::Null,
     }
 }
@@ -268,4 +269,23 @@ fn create_function_env(func: &Function, args: &[Object], env: &Env) -> Env {
 fn eval_array_literal(exprs: &[Expression], env: &Env) -> Object {
     let vals = eval_expressions(exprs, env);
     Object::new_array(vals)
+}
+
+fn eval_index_expr(left: &Expression, index: &Expression, env: &Env) -> Object {
+    let index = eval_expr(index, env);
+
+    let index = match index {
+        Object::Error(_) => return index,
+        Object::Int(i) => i,
+        _ => {
+            return Object::new_error(&format!(
+                "index operator `{}` not supported on: {}",
+                index,
+                eval_expr(left, env).get_type()
+            ))
+        }
+    };
+
+    let array = eval_expr(left, env);
+    array.index_array(index)
 }
