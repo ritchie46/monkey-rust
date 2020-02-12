@@ -355,7 +355,7 @@ mod eval_test {
             "[1, 2, 3][2]",
             "let i = 0; [1][i];",
             "[1, 2, 3][-1]",
-            "let a = [1, 2, 3]; len(a)"
+            "let a = [1, 2, 3]; len(a)",
         ];
         let outputs = [1, 2, 3, 1, 3, 3];
         for (input, output) in inputs.iter().zip(&outputs) {
