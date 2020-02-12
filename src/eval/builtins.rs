@@ -27,6 +27,7 @@ pub fn len(args: Vec<Object>) -> Object {
     let arg = &args[0];
     match arg {
         Object::String(s) => Object::Int(s.len() as i64),
+        Object::Array(v) => Object::Int(v.len() as i64),
         _ => Object::new_error("invalid argument type for builtin: len()"),
     }
 }
