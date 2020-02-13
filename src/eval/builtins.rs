@@ -5,6 +5,7 @@ lazy_static! {
     pub static ref BUILTINS: HashMap<String, BuiltinFn> = {
         let mut m = HashMap::new();
         m.insert("len".to_string(), len as BuiltinFn);
+        m.insert("puts".to_string(), print as BuiltinFn);
         m
     };
 }
@@ -30,4 +31,14 @@ pub fn len(args: Vec<Object>) -> Object {
         Object::Array(v) => Object::Int(v.len() as i64),
         _ => Object::new_error("invalid argument type for builtin: len()"),
     }
+}
+
+pub fn print(args: Vec<Object>) -> Object {
+    for (i, o) in args.iter().enumerate() {
+        if i > 0 {
+            print!(" ")
+        }
+        print!("{}", o);
+    }
+    Object::Ignore
 }

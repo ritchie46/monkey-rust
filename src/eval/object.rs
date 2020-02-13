@@ -26,6 +26,7 @@ pub enum Object {
     Builtin(Builtin),
     Array(Box<Vec<Object>>),
     Hash(HashMap<Box<Object>, Box<Object>>),
+    Ignore,
 }
 
 impl PartialEq<Object> for Object {
@@ -69,6 +70,7 @@ impl Object {
             Object::String(_) => "str",
             Object::Builtin(_) => "builtin",
             Object::Array(_) => "array",
+            Object::Hash(_) => "hash",
             _ => "null",
         }
     }
@@ -175,6 +177,7 @@ impl fmt::Display for Object {
                     .map(|a| *a.clone())
                     .collect::<Vec<Object>>(),
             )),
+            Object::Ignore => f.write_str(""),
             _ => f.write_str("not impl."),
         }
     }

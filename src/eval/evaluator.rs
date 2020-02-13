@@ -184,7 +184,7 @@ fn eval_let_stmt(identifier: &str, expr: &Expression, env: &Env) -> Object {
 
     let mut env = env.borrow_mut();
     env.set(identifier, &evaluated);
-    Object::Null
+    Object::Ignore
 }
 
 fn eval_identifier(identifier: &str, env: &Env) -> Object {
