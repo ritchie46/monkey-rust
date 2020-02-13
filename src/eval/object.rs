@@ -2,6 +2,7 @@ use crate::eval::builtins::{Builtin, BuiltinFn};
 use crate::format;
 use crate::parser::ast::{Expression, Statement};
 use crate::Env;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -25,7 +26,7 @@ pub enum Object {
     String(String),
     Builtin(Builtin),
     Array(Box<Vec<Object>>),
-    Hash(HashMap<Box<Object>, Box<Object>>),
+    Hash(Rc<RefCell<HashMap<Object, Object>>>),
     Ignore,
 }
 
@@ -129,14 +130,14 @@ impl Object {
     pub fn new_hash(keys: Vec<Object>, values: Vec<Object>) -> Object {
         let mut map = HashMap::new();
         for (k, v) in keys.into_iter().zip(values) {
-            map.insert(Box::new(k), Box::new(v));
+            map.insert(k, v);
         }
-        Object::Hash(map)
+        Object::Hash(Rc::new(RefCell::new(map)))
     }
 
     pub fn get_hash_value(&self, key: Object) -> Object {
         let mut map = match self {
-            Object::Hash(m) => m,
+            Object::Hash(m) => m.borrow(),
             _ => {
                 return Object::new_error(&format!(
                     "index operator `{}` not supported on: {}",
@@ -147,9 +148,24 @@ impl Object {
         };
         let value = map.get(&key);
         match value {
-            Some(v) => *v.clone(),
+            Some(v) => v.clone(),
             None => Object::new_error(&format!("key: {} not found", key)),
         }
+    }
+
+    pub fn insert_hash_value(&mut self, key: Object, value: Object) -> Object {
+        let mut map = match self {
+            Object::Hash(m) => m.borrow_mut(),
+            _ => {
+                return Object::new_error(&format!(
+                    "index operator `{}` not supported on: {}",
+                    key.get_type(),
+                    self.get_type()
+                ))
+            }
+        };
+        map.insert(key, value);
+        Object::Ignore
     }
 }
 
@@ -168,13 +184,15 @@ impl fmt::Display for Object {
             Object::Builtin(b) => write!(f, "builtin: {}", b.identifier),
             Object::Array(values) => f.write_str(&format::fmt_array_literal(values)),
             Object::Hash(map) => f.write_str(&format::fmt_hash_literal(
-                &map.keys()
+                &map.borrow()
+                    .keys()
                     .into_iter()
-                    .map(|a| *a.clone())
+                    .map(|a| a.clone())
                     .collect::<Vec<Object>>(),
-                &map.values()
+                &map.borrow()
+                    .values()
                     .into_iter()
-                    .map(|a| *a.clone())
+                    .map(|a| a.clone())
                     .collect::<Vec<Object>>(),
             )),
             Object::Ignore => f.write_str(""),

@@ -198,8 +198,7 @@ fn eval_identifier(identifier: &str, env: &Env) -> Object {
     let builtin = BUILTINS.get(identifier);
 
     if builtin.is_none() {
-        return Object::new_error(&format!("identifier not found a: {}", identifier))
-            .clone(); // clone from environment
+        return Object::new_error(&format!("identifier not found a: {}", identifier));
     }
     Object::new_builtin(identifier, *builtin.unwrap())
 }

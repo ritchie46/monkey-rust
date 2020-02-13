@@ -1,3 +1,4 @@
+use crate::eval::environment::Env;
 use crate::Object;
 use std::collections::HashMap;
 
@@ -5,7 +6,8 @@ lazy_static! {
     pub static ref BUILTINS: HashMap<String, BuiltinFn> = {
         let mut m = HashMap::new();
         m.insert("len".to_string(), len as BuiltinFn);
-        m.insert("puts".to_string(), print as BuiltinFn);
+        m.insert("print".to_string(), print as BuiltinFn);
+        m.insert("insert".to_string(), insert as BuiltinFn);
         m
     };
 }
@@ -41,4 +43,19 @@ pub fn print(args: Vec<Object>) -> Object {
         print!("{}", o);
     }
     Object::Ignore
+}
+
+pub fn insert(args: Vec<Object>) -> Object {
+    if args.len() != 3 {
+        return Object::new_error("expected a container, and index/key and a value");
+    }
+    let mut args = args.into_iter();
+    let mut container = args.next().unwrap();
+    let key = args.next().unwrap();
+    let value = args.next().unwrap();
+
+    match container {
+        Object::Hash(_) => container.insert_hash_value(key, value),
+        _ => Object::new_error("not supported"),
+    }
 }

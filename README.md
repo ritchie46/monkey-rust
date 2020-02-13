@@ -13,7 +13,7 @@ implementation has:
 - [x] Arithmetic expressions
 - [x] Let statements
 - [x] First-class and higher-order functions
-- [x] A few Built-in functions
+- [x] (A few) Built-in functions
 - [x] Recursion
 - [x] Closures
 
@@ -34,4 +34,23 @@ let fibonacci = fn(x) {
     }
   }
 };
+```
+
+### My own flavor
+I took the liberty to change some behavior of the language. 
+
+* I don't like `puts` so we use `print`
+
+```text
+>> print("foo" + "bar")
+"foobar"
+```
+
+* added a `insert` builtin for mutable hashes and ~~arrays~~.
+
+```text
+>> let map = {1: "one"};    
+>> insert(map, 2, "two")
+>> map
+{1: "one", 2: "two"}
 ```
