@@ -11,7 +11,7 @@ lazy_static! {
 
 pub type BuiltinFn = fn(Vec<Object>) -> Object;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Builtin {
     pub identifier: String,
     pub function: BuiltinFn,

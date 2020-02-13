@@ -6,7 +6,7 @@ use std::fmt;
 
 pub type Program = Vec<Statement>;
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, PartialOrd, PartialEq, Clone, Eq)]
 pub enum Statement {
     Let(String, Expression), // identifier, expr
     Return(Expression),
@@ -32,7 +32,7 @@ impl std::fmt::Display for Statement {
     }
 }
 
-#[derive(Debug, PartialOrd, PartialEq, Clone)]
+#[derive(Debug, PartialOrd, PartialEq, Clone, Eq)]
 pub enum Expression {
     Identifier(String),
     IntegerLiteral(i64),

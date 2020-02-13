@@ -2,10 +2,19 @@ use crate::eval::builtins::{Builtin, BuiltinFn};
 use crate::format;
 use crate::parser::ast::{Expression, Statement};
 use crate::Env;
+use std::collections::HashMap;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Function {
+    pub parameters: Vec<Expression>, // Identifier
+    pub body: Statement,             // Blockstmt
+    env: Env,
+}
+
+#[derive(Debug, Clone, Eq)]
 pub enum Object {
     Int(i64),
     Bool(bool),
@@ -16,13 +25,7 @@ pub enum Object {
     String(String),
     Builtin(Builtin),
     Array(Box<Vec<Object>>),
-}
-
-#[derive(Debug, Clone)]
-pub struct Function {
-    pub parameters: Vec<Expression>, // Identifier
-    pub body: Statement,             // Blockstmt
-    env: Env,
+    Hash(HashMap<Box<Object>, Box<Object>>),
 }
 
 impl PartialEq<Object> for Object {
@@ -34,6 +37,17 @@ impl PartialEq<Object> for Object {
             (Object::Error(a), Object::Error(b)) => a == b,
             (Object::String(a), Object::String(b)) => a == b,
             _ => false,
+        }
+    }
+}
+
+impl Hash for Object {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Object::Int(v) => v.hash(state),
+            Object::Bool(v) => v.hash(state),
+            Object::String(v) => v.hash(state),
+            o => panic!(format!("cannot hash {}", o)),
         }
     }
 }
@@ -110,6 +124,13 @@ impl Object {
         };
         a[i].clone()
     }
+    pub fn new_hash(keys: Vec<Object>, values: Vec<Object>) -> Object {
+        let mut map = HashMap::new();
+        for (k, v) in keys.into_iter().zip(values) {
+            map.insert(Box::new(k), Box::new(v));
+        }
+        Object::Hash(map)
+    }
 }
 
 impl fmt::Display for Object {
@@ -126,6 +147,16 @@ impl fmt::Display for Object {
             Object::String(s) => write!(f, r#""{}""#, s),
             Object::Builtin(b) => write!(f, "builtin: {}", b.identifier),
             Object::Array(values) => f.write_str(&format::fmt_array_literal(values)),
+            Object::Hash(map) => f.write_str(&format::fmt_hash_literal(
+                &map.keys()
+                    .into_iter()
+                    .map(|a| *a.clone())
+                    .collect::<Vec<Object>>(),
+                &map.values()
+                    .into_iter()
+                    .map(|a| *a.clone())
+                    .collect::<Vec<Object>>(),
+            )),
             _ => f.write_str("not impl."),
         }
     }

@@ -8,7 +8,7 @@ This is a Rust implementation of the original book [Writing An Interpreter In Go
 which (as you've might have guessed) is written in Go. At the moment this is a Work In Progress. The current
 implementation has:
 
-- [x] Integers, Booleans, Strings, Arrays
+- [x] Integers, Booleans, Strings, Arrays, HashMaps
 - [x] A REPL
 - [x] Arithmetic expressions
 - [x] Let statements
@@ -16,7 +16,6 @@ implementation has:
 - [x] A few Built-in functions
 - [x] Recursion
 - [x] Closures
-- [ ] Hashmaps
 
 ### Starting the REPL:
 

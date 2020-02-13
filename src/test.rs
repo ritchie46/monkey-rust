@@ -377,6 +377,12 @@ mod eval_test {
         for (input, output) in inputs.iter().zip(&outputs) {
             let parsed = &parse_program(&input).unwrap()[0];
             assert_eq!(&format! {"{}", parsed}, output);
+            let ev = evaluated(&input);
+
+            match ev {
+                Object::Hash(_) => assert!(true),
+                _ => assert!(false),
+            }
         }
     }
 }

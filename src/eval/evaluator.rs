@@ -81,6 +81,7 @@ fn eval_expr(expr: &Expression, env: &Env) -> Object {
         Expression::StringLiteral(s) => Object::String(s.clone()),
         Expression::ArrayLiteral(expressions) => eval_array_literal(expressions, env),
         Expression::IndexExpr { left, index } => eval_index_expr(left, index, env),
+        Expression::HashLiteral { keys, values } => eval_hash_literal(keys, values, env),
         _ => Object::Null,
     }
 }
@@ -288,4 +289,21 @@ fn eval_index_expr(left: &Expression, index: &Expression, env: &Env) -> Object {
 
     let array = eval_expr(left, env);
     array.index_array(index)
+}
+
+fn eval_hash_literal(keys: &[Expression], values: &[Expression], env: &Env) -> Object {
+    let keys = eval_expressions(keys, env);
+
+    if keys.len() == 1 {
+        if let Object::Error(_) = keys[0] {
+            return keys[0].clone();
+        }
+    }
+    let values = eval_expressions(values, env);
+    if values.len() == 1 {
+        if let Object::Error(_) = values[0] {
+            return values[0].clone();
+        }
+    }
+    Object::new_hash(keys, values)
 }

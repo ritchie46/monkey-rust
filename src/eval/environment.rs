@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 pub type Env = Rc<RefCell<Environment>>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Environment {
     // Cannot borrow identifier from the ast.
     // In the repl the ast does not live long enough.
