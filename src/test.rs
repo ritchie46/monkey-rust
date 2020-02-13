@@ -384,5 +384,15 @@ mod eval_test {
                 _ => assert!(false),
             }
         }
+
+        let inputs = [
+            r#"let a = {1: "one", 2: "two"}; a[1]"#,
+            r#"let bar = {"one": (0 + 1), "two": (10 - 8), "three": (15 / 5)}; bar["two"]"#,
+        ];
+        let outputs = [r#""one""#, "2"];
+        for (input, output) in inputs.iter().zip(&outputs) {
+            let ev = evaluated(&input);
+            assert_eq!(&format! {"{}", ev}, output);
+        }
     }
 }

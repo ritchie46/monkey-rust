@@ -275,20 +275,30 @@ fn eval_array_literal(exprs: &[Expression], env: &Env) -> Object {
 fn eval_index_expr(left: &Expression, index: &Expression, env: &Env) -> Object {
     let index = eval_expr(index, env);
 
-    let index = match index {
-        Object::Error(_) => return index,
-        Object::Int(i) => i,
+    let obj = eval_expr(left, env);
+    match &obj {
+        Object::Hash(map) => obj.get_hash_value(index),
+        Object::Array(arr) => index_array(obj, index),
         _ => {
             return Object::new_error(&format!(
                 "index operator `{}` not supported on: {}",
-                index,
-                eval_expr(left, env).get_type()
+                index.get_type(),
+                obj.get_type()
             ))
         }
-    };
+    }
+}
 
-    let array = eval_expr(left, env);
-    array.index_array(index)
+fn index_array(array: Object, index: Object) -> Object {
+    match index {
+        // Already know that object is an array.
+        Object::Int(i) => array.index_array(i),
+        _ => Object::new_error(&format!(
+            "index operator `{}` not supported on: {}",
+            index.get_type(),
+            array.get_type()
+        )),
+    }
 }
 
 fn eval_hash_literal(keys: &[Expression], values: &[Expression], env: &Env) -> Object {

@@ -131,6 +131,24 @@ impl Object {
         }
         Object::Hash(map)
     }
+
+    pub fn get_hash_value(&self, key: Object) -> Object {
+        let mut map = match self {
+            Object::Hash(m) => m,
+            _ => {
+                return Object::new_error(&format!(
+                    "index operator `{}` not supported on: {}",
+                    key.get_type(),
+                    self.get_type()
+                ))
+            }
+        };
+        let value = map.get(&key);
+        match value {
+            Some(v) => *v.clone(),
+            None => Object::new_error(&format!("key: {} not found", key)),
+        }
+    }
 }
 
 impl fmt::Display for Object {
