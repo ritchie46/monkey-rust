@@ -17,9 +17,15 @@ implementation has:
 - [x] Recursion
 - [x] Closures
 
-### Starting the REPL:
+### Running Monkey:
 
-`$ cargo run`
+You can start the REPL by:
+
+`$ cargo --release run`
+
+Or run a Monkey program by:
+
+`$ cargo --release run <some-program.mnl>`
 
 ### Excerpt of the Monkey Language
 ```

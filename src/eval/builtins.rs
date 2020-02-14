@@ -1,6 +1,7 @@
 use crate::eval::environment::Env;
 use crate::Object;
 use std::collections::HashMap;
+use std::io::Write;
 
 lazy_static! {
     pub static ref BUILTINS: HashMap<String, BuiltinFn> = {
@@ -40,8 +41,16 @@ pub fn print(args: Vec<Object>) -> Object {
         if i > 0 {
             print!(" ")
         }
-        print!("{}", o);
+        if o.get_type() == "str" {
+            let s = format!("{}", o);
+
+            print!("{}", (s[1..s.len()-1]).to_string())
+        } else {
+            print!("{}", o);
+        }
     }
+    print!("\n");
+    std::io::stdout().flush();
     Object::Ignore
 }
 
