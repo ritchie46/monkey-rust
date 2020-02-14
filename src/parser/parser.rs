@@ -15,6 +15,7 @@ pub enum Precedence {
     LessGreater,
     Sum,
     Product,
+    Method,
     Prefix,
     Call,
     Index,
@@ -33,6 +34,7 @@ lazy_static! {
         m.insert(TokenType::Asterix, Precedence::Product);
         m.insert(TokenType::LParen, Precedence::Call);
         m.insert(TokenType::LBracket, Precedence::Index);
+        m.insert(TokenType::Dot, Precedence::Method);
         m
     };
 }
@@ -97,6 +99,7 @@ impl<'a> Parser<'a> {
             TokenType::GT => self.parse_infix_expr(left),
             TokenType::LParen => self.parse_call_expr(left), // left is fn
             TokenType::LBracket => self.parse_index_expr(left),
+            TokenType::Dot => self.parse_method(left),
             // Try to parse it and let evaluator define errors.
             _ => self.parse_infix_expr(left),
         }
@@ -407,6 +410,14 @@ impl<'a> Parser<'a> {
             return Err(ParserError::Expected("]".to_string()));
         }
         Expression::new_index_expr(left, index)
+    }
+
+    fn parse_method(&mut self, left: Expression) -> ParseResult<Expression> {
+        self.next_token();
+        let ident = self.parse_identifier()?;
+        self.next_token();
+        let args = self.parse_call_args()?;
+        Expression::new_method(left, ident, args)
     }
 
     fn parse_hash_literal(&mut self) -> ParseResult<Expression> {

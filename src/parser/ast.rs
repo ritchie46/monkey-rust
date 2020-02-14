@@ -69,6 +69,11 @@ pub enum Expression {
         keys: Box<Vec<Expression>>,
         values: Box<Vec<Expression>>,
     },
+    Method {
+        left: Box<Expression>, // array, hash
+        identifier: Box<Expression>,
+        args: Box<Vec<Expression>>,
+    },
     Some, // only for debugging purposes
 }
 
@@ -110,6 +115,11 @@ impl fmt::Display for Expression {
             Expression::HashLiteral { keys, values } => {
                 f.write_str(&format::fmt_hash_literal(keys, values))
             }
+            Expression::Method {
+                left,
+                identifier,
+                args,
+            } => f.write_str(&format::fmt_method(left, identifier, args)),
             _ => f.write_str("not impl"),
         }
     }
@@ -211,6 +221,18 @@ impl Expression {
         Ok(Expression::HashLiteral {
             keys: Box::new(keys),
             values: Box::new(values),
+        })
+    }
+
+    pub fn new_method(
+        left: Expression,
+        identifier: Expression,
+        args: Vec<Expression>,
+    ) -> ParseResult<Expression> {
+        Ok(Expression::Method {
+            left: Box::new(left),
+            identifier: Box::new(identifier),
+            args: Box::new(args),
         })
     }
 }

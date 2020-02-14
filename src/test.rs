@@ -395,4 +395,15 @@ mod eval_test {
             assert_eq!(&format! {"{}", ev}, output);
         }
     }
+
+    #[test]
+    fn test_method() {
+        let inputs = [r#"a.foo(1)"#];
+        let outputs = [r#"a.foo(1)"#];
+
+        for (input, output) in inputs.iter().zip(&outputs) {
+            let parsed = &parse_program(&input).unwrap()[0];
+            assert_eq!(&format! {"{}", parsed}, output);
+        }
+    }
 }

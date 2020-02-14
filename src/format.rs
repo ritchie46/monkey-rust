@@ -35,7 +35,10 @@ pub fn fmt_function_literal<T: fmt::Display>(args: &[T], body: &Statement) -> St
     s
 }
 
-pub fn fmt_call_expr(function: &Expression, args: &Vec<Expression>) -> String {
+pub fn fmt_call_expr<T: fmt::Display, U: fmt::Display>(
+    function: &T,
+    args: &[U],
+) -> String {
     let mut s = format!("{}(", function);
     fmt_comma_separated_expr(&mut s, args);
     s.push(')');
@@ -60,4 +63,12 @@ pub fn fmt_hash_literal<T: fmt::Display>(keys: &[T], values: &[T]) -> String {
     }
     s.push('}');
     s
+}
+
+pub fn fmt_method<T: fmt::Display, U: fmt::Display>(
+    left: &T,
+    identifier: &T,
+    args: &[U],
+) -> String {
+    format!("{}.{}", left, fmt_call_expr(identifier, args))
 }

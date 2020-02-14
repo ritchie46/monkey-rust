@@ -33,6 +33,7 @@ pub enum TokenType {
     LBracket, // [
     RBracket, // ]
     Colon,    // :
+    Dot,      // .
 }
 
 #[derive(Debug, PartialEq, Clone)]
