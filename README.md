@@ -21,11 +21,11 @@ implementation has:
 
 You can start the REPL by:
 
-`$ cargo --release run`
+`$ cargo run --release -p interpreter`
 
 Or run a Monkey program by:
 
-`$ cargo --release run <some-program.mnl>`
+`$ cargo run --release -p interpreter <some-program.mnl>`
 
 ### Excerpt of the Monkey Language
 ```
