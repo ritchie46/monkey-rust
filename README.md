@@ -46,11 +46,11 @@ I took the liberty to change some behavior of the language.
 "foobar"
 ```
 
-* added a `insert` builtin for mutable hashes and ~~arrays~~.
+* added a `insert` method for mutable hashes and ~~arrays~~.
 
 ```text
 >> let map = {1: "one"};    
->> insert(map, 2, "two")
+>> map.insert(2, "two")
 >> map
 {1: "one", 2: "two"}
 ```

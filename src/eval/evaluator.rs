@@ -1,3 +1,4 @@
+use crate::eval::builtins;
 use crate::eval::builtins::{len, Builtin, BuiltinFn, BUILTINS};
 use crate::eval::environment::new_enclosed_environment;
 use crate::eval::object::Function;
@@ -82,6 +83,11 @@ fn eval_expr(expr: &Expression, env: &Env) -> Object {
         Expression::ArrayLiteral(expressions) => eval_array_literal(expressions, env),
         Expression::IndexExpr { left, index } => eval_index_expr(left, index, env),
         Expression::HashLiteral { keys, values } => eval_hash_literal(keys, values, env),
+        Expression::Method {
+            left,
+            identifier,
+            args,
+        } => eval_method_expr(left, identifier, args, env),
         _ => Object::Null,
     }
 }
@@ -315,4 +321,44 @@ fn eval_hash_literal(keys: &[Expression], values: &[Expression], env: &Env) -> O
         }
     }
     Object::new_hash(keys, values)
+}
+
+fn eval_method_expr(
+    left: &Expression,
+    identifier: &Expression,
+    args: &[Expression],
+    env: &Env,
+) -> Object {
+    let left = eval_expr(left, env);
+
+    match left {
+        Object::Error(_) => return left,
+        Object::Hash(_) => return call_hash_methods(left, identifier, args, env),
+        _ => Object::Error(format!("method not found on {}", left.get_type())),
+    }
+}
+
+fn call_hash_methods(
+    left: Object,
+    identifier: &Expression,
+    args: &[Expression],
+    env: &Env,
+) -> Object {
+    let method_name = match identifier {
+        Expression::Identifier(s) => &s[..],
+        _ => return Object::Error("not a valid method name".to_string()),
+    };
+
+    let mut args = eval_expressions(args, env);
+    if args.len() == 1 {
+        if let Object::Error(_) = args[0] {
+            return args[0].clone();
+        }
+    }
+    args.insert(0, left);
+
+    match method_name {
+        "insert" => builtins::insert(args),
+        _ => Object::Error("method not found".to_string()),
+    }
 }

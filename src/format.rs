@@ -70,5 +70,9 @@ pub fn fmt_method<T: fmt::Display, U: fmt::Display>(
     identifier: &T,
     args: &[U],
 ) -> String {
-    format!("{}.{}", left, fmt_call_expr(identifier, args))
+    if args.len() > 0 {
+        format!("{}.{}", left, fmt_call_expr(identifier, args))
+    } else {
+        format!("{}.{}", left, identifier)
+    }
 }

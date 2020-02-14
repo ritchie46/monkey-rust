@@ -413,9 +413,14 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_method(&mut self, left: Expression) -> ParseResult<Expression> {
-        self.next_token();
+        self.next_token(); // dot
         let ident = self.parse_identifier()?;
-        self.next_token();
+
+        if !self.peek_tkn_eq(TokenType::LParen) {
+            return Expression::new_method(left, ident, vec![]);
+        };
+
+        self.next_token(); // (
         let args = self.parse_call_args()?;
         Expression::new_method(left, ident, args)
     }

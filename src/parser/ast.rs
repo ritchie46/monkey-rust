@@ -235,4 +235,19 @@ impl Expression {
             args: Box::new(args),
         })
     }
+
+    pub fn method_identifier(&self) -> Option<&str> {
+        let a = match self {
+            Expression::Method {
+                left,
+                identifier,
+                args,
+            } => match &**identifier {
+                Expression::Identifier(s) => return Some(s),
+                _ => None,
+            },
+            _ => None,
+        };
+        a
+    }
 }
