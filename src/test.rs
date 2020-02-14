@@ -398,8 +398,8 @@ mod eval_test {
 
     #[test]
     fn test_method() {
-        let inputs = [r#"a.foo(1)"#];
-        let outputs = [r#"a.foo(1)"#];
+        let inputs = [r#"a.foo(1 + 2 * 3)"#, r#"bar.foo_bar(2)"#];
+        let outputs = [r#"a.foo((1 + (2 * 3)))"#, "bar.foo_bar(2)"];
 
         for (input, output) in inputs.iter().zip(&outputs) {
             let parsed = &parse_program(&input).unwrap()[0];

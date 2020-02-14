@@ -147,7 +147,7 @@ fn new_token(token_type: TokenType, ch: Literal) -> Token {
 
 fn is_letter(ch: u8) -> bool {
     match (ch as char).to_lowercase().next() {
-        Some(ch) => ('a' <= ch) && (ch <= 'z'),
+        Some(ch) => ('a' <= ch) && (ch <= 'z') || ch == '_',
         None => false,
     }
 }
