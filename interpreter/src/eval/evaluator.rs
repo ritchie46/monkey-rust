@@ -1,9 +1,10 @@
-use crate::eval::builtins;
-use crate::eval::builtins::{len, Builtin, BuiltinFn, BUILTINS};
-use crate::eval::environment::new_enclosed_environment;
-use crate::eval::object::Function;
+use crate::eval::{
+    builtins,
+    builtins::{len, Builtin, BuiltinFn, BUILTINS},
+    environment::{new_enclosed_environment, Env},
+    object::{Function, Object},
+};
 use crate::parser::ast::{Expression, Program, Statement};
-use crate::{Env, Object};
 
 /// Run all statements and return last
 pub fn eval_program(program_ast: &Program, env: &Env) -> Object {

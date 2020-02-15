@@ -1,5 +1,5 @@
 use crate::eval::environment::Env;
-use crate::Object;
+use crate::eval::object::Object;
 use std::collections::HashMap;
 use std::io::Write;
 

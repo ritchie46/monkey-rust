@@ -1,5 +1,5 @@
 use crate::err::ParserError;
-use crate::eval::environment::Environment;
+use crate::eval::{environment::Environment, object::Object};
 use crate::lexer::lexer::Lexer;
 use crate::parser::ast::*;
 use crate::parser::parser::*;
@@ -183,7 +183,6 @@ mod parser_test {
 mod eval_test {
     use super::*;
     use crate::eval::evaluator::eval_program;
-    use crate::Object;
 
     fn evaluated(input: &str) -> Object {
         let parsed = parse_program(input);

@@ -1,7 +1,7 @@
 use crate::eval::builtins::{Builtin, BuiltinFn};
+use crate::eval::environment::Env;
 use crate::format;
 use crate::parser::ast::{Expression, Statement};
-use crate::Env;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;

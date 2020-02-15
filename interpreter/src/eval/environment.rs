@@ -1,4 +1,4 @@
-use crate::Object;
+use crate::eval::object::Object;
 use fnv::FnvHashMap as HashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
