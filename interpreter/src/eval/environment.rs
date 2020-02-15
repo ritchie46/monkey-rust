@@ -1,6 +1,6 @@
 use crate::Object;
+use fnv::FnvHashMap as HashMap;
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 
 pub type Env = Rc<RefCell<Environment>>;
@@ -17,11 +17,11 @@ pub struct Environment {
 
 impl Environment {
     pub fn new() -> Rc<RefCell<Environment>> {
-        let mut store: HashMap<String, Object> = HashMap::new();
+        let mut store: HashMap<String, Object> = HashMap::default();
         let env = Environment { store, outer: None };
         Rc::new(RefCell::new(env))
     }
-    pub fn set(&mut self, identifier: &str, value: &Object) {
+    pub fn set(&mut self, identifier: &str, value: Object) {
         self.store.insert(identifier.to_string(), value.clone());
     }
 
@@ -44,7 +44,7 @@ impl Environment {
 }
 
 pub fn new_enclosed_environment(outer: &Env) -> Env {
-    let mut store: HashMap<String, Object> = HashMap::new();
+    let mut store: HashMap<String, Object> = HashMap::default();
     let env = Environment {
         store,
         outer: Some(Rc::clone(outer)),

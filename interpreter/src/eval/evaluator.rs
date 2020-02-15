@@ -189,7 +189,7 @@ fn eval_let_stmt(identifier: &str, expr: &Expression, env: &Env) -> Object {
     }
 
     let mut env = env.borrow_mut();
-    env.set(identifier, &evaluated);
+    env.set(identifier, evaluated);
     Object::Ignore
 }
 
@@ -223,7 +223,7 @@ fn eval_call_expr(function: &Expression, args: &[Expression], env: &Env) -> Obje
         }
     }
     match function_ident {
-        Object::Function(f) => apply_function(&f, &arg_objs, env),
+        Object::Function(f) => apply_function(&f, arg_objs, env),
         Object::Builtin(b) => {
             let f = b.function;
             f(arg_objs)
@@ -246,7 +246,7 @@ fn eval_expressions(exprs: &[Expression], env: &Env) -> Vec<Object> {
     objects
 }
 
-fn apply_function(f: &Function, args: &[Object], env: &Env) -> Object {
+fn apply_function(f: &Function, args: Vec<Object>, env: &Env) -> Object {
     //    if let Object::Function(f) = &func {
     let env = create_function_env(f, args, env);
     let evaluated = eval_stmt(&f.body, &env);
@@ -257,7 +257,7 @@ fn apply_function(f: &Function, args: &[Object], env: &Env) -> Object {
     evaluated
 }
 
-fn create_function_env(func: &Function, args: &[Object], env: &Env) -> Env {
+fn create_function_env(func: &Function, args: Vec<Object>, env: &Env) -> Env {
     let env = new_enclosed_environment(env);
 
     {

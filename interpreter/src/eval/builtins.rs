@@ -44,7 +44,7 @@ pub fn print(args: Vec<Object>) -> Object {
         if o.get_type() == "str" {
             let s = format!("{}", o);
 
-            print!("{}", (s[1..s.len()-1]).to_string())
+            print!("{}", (s[1..s.len() - 1]).to_string())
         } else {
             print!("{}", o);
         }

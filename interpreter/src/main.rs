@@ -21,7 +21,7 @@ mod test;
 use eval::environment::Env;
 use eval::object::Object;
 use std::env;
-use std::time::{SystemTime};
+use std::time::SystemTime;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -36,10 +36,12 @@ fn main() {
         let t0 = SystemTime::now();
         let opt = std::fs::read_to_string(&args[1]);
 
-
         let s = match opt {
             Ok(s) => s,
-            _ => {println!("could not read file"); return;}
+            _ => {
+                println!("could not read file");
+                return;
+            }
         };
 
         let mut env = eval::environment::Environment::new();
@@ -48,7 +50,9 @@ fn main() {
         let parse_result = par.parse_program();
 
         match parse_result {
-            Ok(program_ast) => println!("{}", eval::evaluator::eval_program(&program_ast, &mut env)),
+            Ok(program_ast) => {
+                println!("{}", eval::evaluator::eval_program(&program_ast, &mut env))
+            }
             Err(e) => println!("{}", e),
         }
         let t1 = SystemTime::now();

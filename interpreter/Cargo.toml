@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 lazy_static = "1.4.0"
 whoami = "0.7"
+fnv = "1.0.3"
