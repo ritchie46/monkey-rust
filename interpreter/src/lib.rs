@@ -20,5 +20,9 @@ pub mod format;
 pub mod repl;
 mod test;
 
+pub use err::ParserError;
 pub use lexer::lexer::Lexer;
-pub use parser::parser::Parser;
+pub use parser::{
+    ast::Program,
+    parser::{ParseResult, Parser},
+};
