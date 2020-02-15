@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::convert::From;
 use std::convert::TryInto;
 use std::fmt::Write;
+
 pub type Instructions = Vec<u8>;
+pub type Operand = usize;
 
 struct Definition {
     name: String,
@@ -20,7 +22,7 @@ impl Definition {
 
 #[derive(PartialEq, Hash, Eq, Copy, Clone, Debug)]
 pub enum OpCode {
-    Constant,
+    Constant, // operand: constants pool location
 }
 
 impl OpCode {
@@ -32,10 +34,8 @@ impl OpCode {
             OpCode::Constant => Definition::new("opconstant", vec![2]),
         }
     }
-    /// Operands are the types where the operation is applied to
-    /// In adding a constant we have one operand
-    /// In addition we have two operands, etc.
-    pub fn make(&self, operands: &[i32]) -> Instructions {
+
+    pub fn make(&self, operands: &[Operand]) -> Instructions {
         let mut instr = self.as_byte().to_be_bytes().to_vec();
 
         let def = self.definition();
@@ -60,12 +60,12 @@ impl From<u8> for OpCode {
     }
 }
 
-fn read_operands(def: Definition, ins: &[u8]) -> (Vec<i32>, usize) {
+fn read_operands(def: Definition, ins: &[u8]) -> (Vec<Operand>, usize) {
     let mut operands = vec![];
     let mut offset = 1; // first one is opcode
     for (i, width) in def.op_width.iter().enumerate() {
         match width {
-            2 => operands.push(read_be_u16(&ins[offset..]) as i32),
+            2 => operands.push(read_be_u16(&ins[offset..]) as usize),
             _ => panic!("not impl"),
         }
         offset += *width as usize;
