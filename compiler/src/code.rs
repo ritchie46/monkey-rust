@@ -23,6 +23,7 @@ impl Definition {
 #[derive(PartialEq, Hash, Eq, Copy, Clone, Debug)]
 pub enum OpCode {
     Constant, // operand: constants pool location
+    Add,      // no operands. Take two values from the stack.
 }
 
 impl OpCode {
@@ -32,6 +33,7 @@ impl OpCode {
     fn definition(&self) -> Definition {
         match self {
             OpCode::Constant => Definition::new("opconstant", vec![2]),
+            OpCode::Add => Definition::new("opadd", vec![]),
         }
     }
 
@@ -55,6 +57,7 @@ impl From<u8> for OpCode {
     fn from(byte: u8) -> Self {
         match byte {
             0 => OpCode::Constant,
+            1 => OpCode::Add,
             _ => panic!("not impl"),
         }
     }
@@ -95,6 +98,15 @@ pub fn read_be_u16(input: &[u8]) -> u16 {
 mod test {
     use super::*;
 
+    fn fmt_instructions(opcodes: &[OpCode], operands: &[&[Operand]]) -> String {
+        let mut instr = vec![];
+
+        for (oc, op) in opcodes.iter().zip(operands) {
+            instr.extend_from_slice(&oc.make(op));
+        }
+        fmt_disassemble(&instr)
+    }
+
     #[test]
     fn test_opconstant() {
         let operand = 65534;
@@ -104,19 +116,31 @@ mod test {
         let r = read_operands(OpCode::Constant.definition(), &ins);
         assert_eq!(operand, r.0[0]);
 
-        let mut instr = vec![];
-
-        instr.extend_from_slice(&OpCode::Constant.make(&[1]));
-        instr.extend_from_slice(&OpCode::Constant.make(&[2]));
-        instr.extend_from_slice(&OpCode::Constant.make(&[65534]));
-
-        let s = fmt_disassemble(&instr);
+        let s = fmt_instructions(
+            &[OpCode::Constant, OpCode::Constant, OpCode::Constant],
+            &[&[1], &[2], &[65534]],
+        );
 
         assert_eq!(
             r#"0000 opcode: Constant [1]
 0003 opcode: Constant [2]
 0006 opcode: Constant [65534]
 "#,
+            s
+        )
+    }
+
+    #[test]
+    fn test_opadd() {
+        let s = fmt_instructions(
+            &[OpCode::Add, OpCode::Constant, OpCode::Constant],
+            &[&[], &[2], &[65534]],
+        );
+        assert_eq!(
+            "0000 opcode: Add []
+0001 opcode: Constant [2]
+0004 opcode: Constant [65534]
+",
             s
         )
     }

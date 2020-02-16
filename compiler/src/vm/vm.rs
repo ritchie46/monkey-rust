@@ -53,7 +53,8 @@ impl VM<'_> {
                     let const_index = read_be_u16(&self.instructions[i + 1..]) as usize;
                     i += 2;
                     let r = self.push(self.constants[const_index].clone())?;
-                }
+                },
+                _ => panic!("not impl")
             }
             i += 1;
         }
