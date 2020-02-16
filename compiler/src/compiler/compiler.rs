@@ -3,7 +3,7 @@ use monkey::eval::object::Object;
 use monkey::parser::ast::{Expression, Statement};
 use std::str::Bytes;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Bytecode<'compiler> {
     pub instructions: &'compiler Instructions,
     pub constants: &'compiler Vec<Object>,

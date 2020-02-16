@@ -1,12 +1,7 @@
 use super::compiler::Compiler;
 use crate::code::OpCode;
-use monkey::{eval::object::Object, Lexer, ParseResult, Parser, ParserError, Program};
-
-fn parse(input: &str) -> Result<Program, ParserError> {
-    let mut lex = Lexer::new(input);
-    let mut par = Parser::new(&mut lex);
-    return par.parse_program();
-}
+use crate::utils::parse;
+use monkey::eval::object::Object;
 
 #[test]
 fn test_add_constant() {

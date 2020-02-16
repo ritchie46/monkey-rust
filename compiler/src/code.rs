@@ -86,7 +86,7 @@ fn fmt_disassemble(ins: &[u8]) -> String {
     s
 }
 
-fn read_be_u16(input: &[u8]) -> u16 {
+pub fn read_be_u16(input: &[u8]) -> u16 {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<u16>());
     u16::from_be_bytes(int_bytes.try_into().unwrap())
 }

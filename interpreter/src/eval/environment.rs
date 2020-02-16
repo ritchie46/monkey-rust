@@ -22,7 +22,7 @@ impl Environment {
         Rc::new(RefCell::new(env))
     }
     pub fn set(&mut self, identifier: &str, value: Object) {
-        self.store.insert(identifier.to_string(), value.clone());
+        self.store.insert(identifier.to_string(), value);
     }
 
     pub fn get(&self, identifier: &str) -> Option<Object> {
