@@ -136,7 +136,7 @@ impl Object {
     }
 
     pub fn get_hash_value(&self, key: Object) -> Object {
-        let mut map = match self {
+        let map = match self {
             Object::Hash(m) => m.borrow(),
             _ => {
                 return Object::new_error(&format!(

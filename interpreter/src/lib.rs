@@ -1,3 +1,11 @@
+#![allow(
+    dead_code,
+    unused_variables,
+    unused_imports,
+    unused_must_use,
+    non_shorthand_field_patterns,
+    unreachable_patterns
+)]
 #[macro_use]
 extern crate lazy_static;
 

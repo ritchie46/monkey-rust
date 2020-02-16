@@ -17,7 +17,7 @@ pub struct Environment {
 
 impl Environment {
     pub fn new() -> Rc<RefCell<Environment>> {
-        let mut store: HashMap<String, Object> = HashMap::default();
+        let store: HashMap<String, Object> = HashMap::default();
         let env = Environment { store, outer: None };
         Rc::new(RefCell::new(env))
     }
@@ -44,7 +44,7 @@ impl Environment {
 }
 
 pub fn new_enclosed_environment(outer: &Env) -> Env {
-    let mut store: HashMap<String, Object> = HashMap::default();
+    let store: HashMap<String, Object> = HashMap::default();
     let env = Environment {
         store,
         outer: Some(Rc::clone(outer)),

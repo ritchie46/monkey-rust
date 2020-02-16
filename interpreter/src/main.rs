@@ -1,8 +1,7 @@
 use monkey::{
     eval::{
-        environment::{Env, Environment},
+        environment::{Environment},
         evaluator::eval_program,
-        object::Object,
     },
     repl, Lexer, Parser,
 };
