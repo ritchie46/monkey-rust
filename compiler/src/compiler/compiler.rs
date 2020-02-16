@@ -51,6 +51,12 @@ impl Compiler {
             } => {
                 self.compile_expr(left);
                 self.compile_expr(right);
+                match &operator[..] {
+                    "+" => {
+                        self.emit(OpCode::Add, &[]);
+                    }
+                    _ => panic!("Operand not known"),
+                }
             }
             Expression::IntegerLiteral(v) => {
                 let int = Object::Int(*v);

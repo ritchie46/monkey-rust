@@ -53,8 +53,17 @@ impl VM<'_> {
                     let const_index = read_be_u16(&self.instructions[i + 1..]) as usize;
                     i += 2;
                     let r = self.push(self.constants[const_index].clone())?;
-                },
-                _ => panic!("not impl")
+                }
+                OpCode::Add => {
+                    let right = self.pop().expect("nothing on the stack");
+                    let left = self.pop().expect("nothing on the stack");
+                    let result = match (left, right) {
+                        (Object::Int(l), Object::Int(r)) => Object::Int(l + r),
+                        _ => panic!("not impl"),
+                    };
+                    self.push(result);
+                }
+                _ => panic!("not impl"),
             }
             i += 1;
         }

@@ -15,6 +15,7 @@ fn test_add_constant() {
     let mut instr = vec![];
     instr.extend_from_slice(&OpCode::Constant.make(&[0]));
     instr.extend_from_slice(&OpCode::Constant.make(&[1]));
+    instr.extend_from_slice(&OpCode::Add.make(&[]));
 
     assert_eq!(bc.constants, &[Object::Int(1), Object::Int(2)]);
     assert_eq!(bc.instructions, &instr)
