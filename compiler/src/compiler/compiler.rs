@@ -37,7 +37,10 @@ impl Compiler {
 
     fn compile_stmt(&mut self, stmt: &Statement) {
         match stmt {
-            Statement::Expr(expr) => self.compile_expr(expr),
+            Statement::Expr(expr) => {
+                self.compile_expr(expr);
+                self.emit(OpCode::Pop, &[]);
+            }
             _ => panic!(),
         }
     }
@@ -64,7 +67,7 @@ impl Compiler {
                 self.emit(OpCode::Constant, &[op]);
             }
             _ => panic!(),
-        }
+        };
     }
 
     /// returns memory location

@@ -10,5 +10,5 @@ fn test_addition() {
     let bytecode = com.bytecode();
     let mut vm = VM::new(&bytecode);
     vm.run();
-    assert_eq!(vm.stack, [Object::Int(3)]);
+    assert_eq!(vm.last_popped(), &Object::Int(3));
 }

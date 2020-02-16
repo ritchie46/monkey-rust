@@ -22,8 +22,9 @@ impl Definition {
 
 #[derive(PartialEq, Hash, Eq, Copy, Clone, Debug)]
 pub enum OpCode {
-    Constant, // operand: constants pool location
-    Add,      // no operands. Take two values from the stack.
+    Constant, // Operand: constants pool location
+    Add,      // No operands. Take two values from the stack.
+    Pop,      // Pop last element from stack. No operands.
 }
 
 impl OpCode {
@@ -34,6 +35,7 @@ impl OpCode {
         match self {
             OpCode::Constant => Definition::new("opconstant", vec![2]),
             OpCode::Add => Definition::new("opadd", vec![]),
+            OpCode::Pop => Definition::new("oppop", vec![]),
         }
     }
 
@@ -58,6 +60,7 @@ impl From<u8> for OpCode {
         match byte {
             0 => OpCode::Constant,
             1 => OpCode::Add,
+            2 => OpCode::Pop,
             _ => panic!("not impl"),
         }
     }

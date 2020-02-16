@@ -1,22 +1,42 @@
 use super::compiler::Compiler;
-use crate::code::OpCode;
-use crate::utils::parse;
+use crate::code::{OpCode, Operand};
+use crate::utils::{compile, parse};
 use monkey::eval::object::Object;
 
-#[test]
-fn test_add_constant() {
-    let input = "1 + 2";
-    let program = parse(input).unwrap();
-
-    let mut comp = Compiler::new();
-    comp.compile_program(&program);
-    let bc = comp.bytecode();
-
+fn make_instructions(opcodes: &[OpCode], operands: &[&[Operand]]) -> Vec<u8> {
     let mut instr = vec![];
-    instr.extend_from_slice(&OpCode::Constant.make(&[0]));
-    instr.extend_from_slice(&OpCode::Constant.make(&[1]));
-    instr.extend_from_slice(&OpCode::Add.make(&[]));
+
+    for (oc, op) in opcodes.iter().zip(operands) {
+        instr.extend_from_slice(&oc.make(op))
+    }
+    instr
+}
+
+fn assert_equal_instr(input: &str, opcodes: &[OpCode], operands: &[&[Operand]]) {
+    let mut com = compile(input).unwrap();
+    let bc = com.bytecode();
+    let instr = make_instructions(opcodes, operands);
+    assert_eq!(bc.instructions, &instr);
+}
+
+#[test]
+fn test_integer_arithmetic() {
+    let input = "1 + 2";
+    let com = compile(input).unwrap();
+    let bc = com.bytecode();
+
+    let instr = make_instructions(
+        &[OpCode::Constant, OpCode::Constant, OpCode::Add, OpCode::Pop],
+        &[&[0], &[1], &[], &[]],
+    );
 
     assert_eq!(bc.constants, &[Object::Int(1), Object::Int(2)]);
-    assert_eq!(bc.instructions, &instr)
+    assert_eq!(bc.instructions, &instr);
+
+    let input = "1; 2";
+    assert_equal_instr(
+        &input,
+        &[OpCode::Constant, OpCode::Pop, OpCode::Constant, OpCode::Pop],
+        &[&[0], &[], &[1], &[]],
+    )
 }

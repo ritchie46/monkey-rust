@@ -18,7 +18,7 @@ impl VM<'_> {
         VM {
             constants: bytecode.constants,
             instructions: bytecode.instructions,
-            stack: Vec::with_capacity(STACKSIZE),
+            stack: vec![Object::Null; STACKSIZE],
             sp: 0,
         }
     }
@@ -30,18 +30,26 @@ impl VM<'_> {
         }
     }
 
-    fn pop(&mut self) -> Option<Object> {
-        self.stack.pop()
+    fn pop(&mut self) -> Option<&Object> {
+        if self.sp == 0 {
+            return None
+        }
+        let o = &self.stack[self.sp - 1];
+        self.sp -= 1;
+        Some(o)
     }
 
     fn push(&mut self, o: Object) -> Result<(), VMError> {
         if self.sp >= STACKSIZE {
             return Err(VMError::StackOverflow);
         }
-
-        self.stack.push(o);
+        self.stack[self.sp] = o;
         self.sp += 1;
         Ok(())
+    }
+
+    pub fn last_popped(&self) -> &Object {
+        &self.stack[self.sp]
     }
 
     pub fn run(&mut self) -> Result<(), VMError> {
@@ -55,13 +63,17 @@ impl VM<'_> {
                     let r = self.push(self.constants[const_index].clone())?;
                 }
                 OpCode::Add => {
-                    let right = self.pop().expect("nothing on the stack");
+                    // clone one because we cannot borrow mutably twice
+                    let right = self.pop().expect("nothing on the stack").clone();
                     let left = self.pop().expect("nothing on the stack");
                     let result = match (left, right) {
                         (Object::Int(l), Object::Int(r)) => Object::Int(l + r),
                         _ => panic!("not impl"),
                     };
                     self.push(result);
+                },
+                OpCode::Pop => {
+                    self.pop();
                 }
                 _ => panic!("not impl"),
             }
