@@ -2,6 +2,7 @@ use crate::code::{read_be_u16, OpCode};
 use crate::compiler::compiler::Bytecode;
 use crate::err::VMError;
 use monkey::eval::object::Object;
+use std::convert::TryFrom;
 
 const STACKSIZE: usize = 2048;
 
@@ -32,11 +33,37 @@ impl VM<'_> {
 
     fn pop(&mut self) -> Option<&Object> {
         if self.sp == 0 {
-            return None
+            return None;
         }
         let o = &self.stack[self.sp - 1];
         self.sp -= 1;
         Some(o)
+    }
+
+    /// Use raw pointers to get two multiple objects of the stack without cloning
+    /// Needs unsafe code to dereference.
+    fn pop_raw(&mut self) -> Option<*const Object> {
+        if self.sp == 0 {
+            return None;
+        }
+        let o = &self.stack[self.sp - 1] as *const Object;
+        self.sp -= 1;
+        Some(o)
+    }
+
+    /// Pop two references from the stack without cloning.
+    /// The borrowck doesn't let use call self.pop twice wo/ a clone.
+    fn pop_2(&mut self) -> Option<(&Object, &Object)> {
+        if self.sp <= 1 {
+            return None;
+        }
+        // first right than left. Such that this function can be unpacked as left, right
+        let two = unsafe {
+            let r = &*self.pop_raw().unwrap();
+            let l = &*self.pop_raw().unwrap();
+            (l, r)
+        };
+        Some(two)
     }
 
     fn push(&mut self, o: Object) -> Result<(), VMError> {
@@ -55,7 +82,7 @@ impl VM<'_> {
     pub fn run(&mut self) -> Result<(), VMError> {
         let mut i = 0;
         while i < self.instructions.len() {
-            let op = OpCode::from(self.instructions[i]);
+            let op = unsafe { OpCode::from_unchecked(self.instructions[i]) };
             match op {
                 OpCode::Constant => {
                     let const_index = read_be_u16(&self.instructions[i + 1..]) as usize;
@@ -64,16 +91,39 @@ impl VM<'_> {
                 }
                 OpCode::Add => {
                     // clone one because we cannot borrow mutably twice
-                    let right = self.pop().expect("nothing on the stack").clone();
-                    let left = self.pop().expect("nothing on the stack");
+                    let (left, right) = self.pop_2().expect("nothing on the stack");
                     let result = match (left, right) {
                         (Object::Int(l), Object::Int(r)) => Object::Int(l + r),
                         _ => panic!("not impl"),
                     };
                     self.push(result);
-                },
+                }
                 OpCode::Pop => {
                     self.pop();
+                }
+                OpCode::Sub => {
+                    let (left, right) = self.pop_2().expect("nothing on the stack");
+                    let result = match (left, right) {
+                        (Object::Int(l), Object::Int(r)) => Object::Int(l - r),
+                        _ => panic!("not impl"),
+                    };
+                    self.push(result);
+                }
+                OpCode::Mul => {
+                    let (left, right) = self.pop_2().expect("nothing on the stack");
+                    let result = match (left, right) {
+                        (Object::Int(l), Object::Int(r)) => Object::Int(l * r),
+                        _ => panic!("not impl"),
+                    };
+                    self.push(result);
+                }
+                OpCode::Div => {
+                    let (left, right) = self.pop_2().expect("nothing on the stack");
+                    let result = match (left, right) {
+                        (Object::Int(l), Object::Int(r)) => Object::Int(l / r),
+                        _ => panic!("not impl"),
+                    };
+                    self.push(result);
                 }
                 _ => panic!("not impl"),
             }

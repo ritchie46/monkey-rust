@@ -1,4 +1,7 @@
 #![allow(dead_code, unused_variables, unused_imports, unused_must_use)]
+#![feature(test)]
+extern crate test;
+
 #[macro_use]
 extern crate lazy_static;
 

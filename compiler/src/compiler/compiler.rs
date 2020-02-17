@@ -58,6 +58,15 @@ impl Compiler {
                     "+" => {
                         self.emit(OpCode::Add, &[]);
                     }
+                    "-" => {
+                        self.emit(OpCode::Sub, &[]);
+                    }
+                    "*" => {
+                        self.emit(OpCode::Mul, &[]);
+                    }
+                    "/" => {
+                        self.emit(OpCode::Div, &[]);
+                    }
                     _ => panic!("Operand not known"),
                 }
             }

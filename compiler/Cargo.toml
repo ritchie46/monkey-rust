@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 interpreter = {path = "../interpreter"}
 lazy_static = "1.4.0"
+num_enum = "0.4.2"

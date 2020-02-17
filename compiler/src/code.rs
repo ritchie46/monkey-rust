@@ -1,3 +1,4 @@
+use num_enum::UnsafeFromPrimitive;
 use std::collections::HashMap;
 use std::convert::From;
 use std::convert::TryInto;
@@ -6,46 +7,39 @@ use std::fmt::Write;
 pub type Instructions = Vec<u8>;
 pub type Operand = usize;
 
-struct Definition {
-    name: String,
-    op_width: Vec<u8>,
-}
-
-impl Definition {
-    fn new(name: &str, op_width: Vec<u8>) -> Definition {
-        Definition {
-            name: name.to_string(),
-            op_width,
-        }
-    }
-}
-
-#[derive(PartialEq, Hash, Eq, Copy, Clone, Debug)]
+#[derive(PartialEq, Hash, Eq, Copy, Clone, Debug, UnsafeFromPrimitive)]
+#[repr(u8)]
 pub enum OpCode {
-    Constant, // Operand: constants pool location
-    Add,      // No operands. Take two values from the stack.
-    Pop,      // Pop last element from stack. No operands.
+    Constant, // 0 Operand: constants pool location
+    Add,      // 1 No operands. Take two values from the stack.
+    Pop,      // 2 Pop last element from stack. No operands.
+    Sub,      // 3 No operands. Take two values from the stack.
+    Mul,      // 4 No operands. Take two values from the stack.
+    Div,      // 5 No operands. Take two values from the stack.
 }
 
 impl OpCode {
     fn as_byte(&self) -> u8 {
         *self as u8
     }
-    fn definition(&self) -> Definition {
+    fn definition(&self) -> Vec<u8> {
         match self {
-            OpCode::Constant => Definition::new("opconstant", vec![2]),
-            OpCode::Add => Definition::new("opadd", vec![]),
-            OpCode::Pop => Definition::new("oppop", vec![]),
+            OpCode::Constant => vec![2],
+            OpCode::Add => vec![],
+            OpCode::Pop => vec![],
+            OpCode::Sub => vec![],
+            OpCode::Mul => vec![],
+            OpCode::Div => vec![],
         }
     }
 
     pub fn make(&self, operands: &[Operand]) -> Instructions {
         let mut instr = self.as_byte().to_be_bytes().to_vec();
 
-        let def = self.definition();
+        let op_width = self.definition();
 
         for (i, operand) in operands.iter().enumerate() {
-            let width = def.op_width[i];
+            let width = op_width[i];
             match width {
                 2 => instr.extend_from_slice(&(*operand as u16).to_be_bytes()),
                 _ => panic!("not impl"),
@@ -55,21 +49,10 @@ impl OpCode {
     }
 }
 
-impl From<u8> for OpCode {
-    fn from(byte: u8) -> Self {
-        match byte {
-            0 => OpCode::Constant,
-            1 => OpCode::Add,
-            2 => OpCode::Pop,
-            _ => panic!("not impl"),
-        }
-    }
-}
-
-fn read_operands(def: Definition, ins: &[u8]) -> (Vec<Operand>, usize) {
+fn read_operands(op_width: &[u8], ins: &[u8]) -> (Vec<Operand>, usize) {
     let mut operands = vec![];
     let mut offset = 1; // first one is opcode
-    for (i, width) in def.op_width.iter().enumerate() {
+    for (i, width) in op_width.iter().enumerate() {
         match width {
             2 => operands.push(read_be_u16(&ins[offset..]) as usize),
             _ => panic!("not impl"),
@@ -83,8 +66,8 @@ fn fmt_disassemble(ins: &[u8]) -> String {
     let mut s = "".to_string();
     let mut c = 0;
     while c < ins.len() {
-        let opcode = OpCode::from(ins[c]);
-        let (operands, n_read) = read_operands(opcode.definition(), &ins[c..]);
+        let opcode = unsafe { OpCode::from_unchecked(ins[c]) };
+        let (operands, n_read) = read_operands(&opcode.definition(), &ins[c..]);
         writeln!(&mut s, "{:04} opcode: {:?} {:?}", c, opcode, operands);
 
         c += n_read;
@@ -116,7 +99,7 @@ mod test {
         assert_eq!([0, 255, 254], OpCode::Constant.make(&[operand])[..]);
 
         let ins = OpCode::Constant.make(&[operand]);
-        let r = read_operands(OpCode::Constant.definition(), &ins);
+        let r = read_operands(&OpCode::Constant.definition(), &ins);
         assert_eq!(operand, r.0[0]);
 
         let s = fmt_instructions(
