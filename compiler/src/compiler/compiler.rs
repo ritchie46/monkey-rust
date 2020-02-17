@@ -52,8 +52,14 @@ impl Compiler {
                 operator,
                 right,
             } => {
-                self.compile_expr(left);
-                self.compile_expr(right);
+                // Reverse the constants to flip GT behavior to LT
+                if operator == "<" {
+                    self.compile_expr(right);
+                    self.compile_expr(left);
+                } else {
+                    self.compile_expr(left);
+                    self.compile_expr(right);
+                }
                 match &operator[..] {
                     "+" => {
                         self.emit(OpCode::Add, &[]);
@@ -66,6 +72,18 @@ impl Compiler {
                     }
                     "/" => {
                         self.emit(OpCode::Div, &[]);
+                    }
+                    ">" => {
+                        self.emit(OpCode::GT, &[]);
+                    }
+                    "<" => {
+                        self.emit(OpCode::GT, &[]);
+                    }
+                    "==" => {
+                        self.emit(OpCode::Equal, &[]);
+                    }
+                    "!=" => {
+                        self.emit(OpCode::NotEqual, &[]);
                     }
                     _ => panic!("Operand not known"),
                 }

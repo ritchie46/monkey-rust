@@ -95,7 +95,6 @@ impl VM<'_> {
                     self.pop();
                 }
                 OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Div => {
-                    // clone one because we cannot borrow mutably twice
                     let (left, right) = self.pop_2().expect("nothing on the stack");
                     let result = match (left, right) {
                         (Object::Int(l), Object::Int(r)) => binary_operation(*l, *r, op),
@@ -108,6 +107,14 @@ impl VM<'_> {
                 }
                 OpCode::False => {
                     self.push(OBJECT_FALSE);
+                }
+                OpCode::Equal | OpCode::NotEqual | OpCode::GT => {
+                    let result = {
+                        // left and right should be dropped before getting 2nd mutable borrow.
+                        let (left, right) = self.pop_2().expect("nothing on the stack");
+                        exec_cmp(left, right, op)
+                    };
+                    self.push(result);
                 }
                 _ => panic!(format!("not impl {:?}", op)),
             }
@@ -124,5 +131,29 @@ fn binary_operation(l: i64, r: i64, op: OpCode) -> Object {
         OpCode::Mul => Object::Int(l * r),
         OpCode::Div => Object::Int(l / r),
         _ => panic!("not impl"),
+    }
+}
+
+fn exec_cmp(left: &Object, right: &Object, op: OpCode) -> Object {
+    match (left, right) {
+        (Object::Int(l), Object::Int(r)) => exec_int_cmp(*l, *r, op),
+        _ => panic!("NOT IMPL"),
+    }
+}
+
+fn exec_int_cmp(left: i64, right: i64, op: OpCode) -> Object {
+    match op {
+        OpCode::Equal => native_bool_to_object(left == right),
+        OpCode::GT => native_bool_to_object(left > right),
+        OpCode::NotEqual => native_bool_to_object(left != right),
+        _ => panic!("unknown operator {:?}", op),
+    }
+}
+
+fn native_bool_to_object(input: bool) -> Object {
+    if input {
+        OBJECT_TRUE
+    } else {
+        OBJECT_FALSE
     }
 }

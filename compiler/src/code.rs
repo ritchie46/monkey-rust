@@ -18,6 +18,9 @@ pub enum OpCode {
     Div,      // 5 No operands. Take two values from the stack.
     True,     // 6
     False,    // 7
+    Equal,    // 8 No operands. Take two values from the stack.
+    NotEqual, // 9 No operands. Take two values from the stack.
+    GT,       // 10 No operands. Take two values from the stack.
 }
 
 impl OpCode {
@@ -27,13 +30,7 @@ impl OpCode {
     fn definition(&self) -> Vec<u8> {
         match self {
             OpCode::Constant => vec![2],
-            OpCode::Add => vec![],
-            OpCode::Pop => vec![],
-            OpCode::Sub => vec![],
-            OpCode::Mul => vec![],
-            OpCode::Div => vec![],
-            OpCode::True => vec![],
-            OpCode::False => vec![],
+            _ => vec![], // all opcodes wo/ operands
         }
     }
 
