@@ -35,3 +35,15 @@ fn bench_addition(b: &mut Bencher) {
     let mut vm = VM::new(&bytecode);
     b.iter(|| vm.run());
 }
+
+#[test]
+fn test_bools() {
+    let inout = &[("true", true), ("false", false)];
+    for (input, output) in inout.iter() {
+        let com = compile(&input).unwrap();
+        let bytecode = com.bytecode();
+        let mut vm = VM::new(&bytecode);
+        vm.run();
+        assert_eq!(vm.last_popped(), &Object::Bool(*output));
+    }
+}

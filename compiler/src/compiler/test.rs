@@ -40,3 +40,10 @@ fn test_integer_arithmetic() {
         &[&[0], &[], &[1], &[]],
     )
 }
+
+#[test]
+fn test_boolean_exprs() {
+    use OpCode::*;
+    let input = "true";
+    assert_equal_instr(&input, &[True, Pop], &[&[], &[]])
+}

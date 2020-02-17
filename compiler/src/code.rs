@@ -16,6 +16,8 @@ pub enum OpCode {
     Sub,      // 3 No operands. Take two values from the stack.
     Mul,      // 4 No operands. Take two values from the stack.
     Div,      // 5 No operands. Take two values from the stack.
+    True,     // 6
+    False,    // 7
 }
 
 impl OpCode {
@@ -30,6 +32,8 @@ impl OpCode {
             OpCode::Sub => vec![],
             OpCode::Mul => vec![],
             OpCode::Div => vec![],
+            OpCode::True => vec![],
+            OpCode::False => vec![],
         }
     }
 

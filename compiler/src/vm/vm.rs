@@ -5,6 +5,8 @@ use monkey::eval::object::Object;
 use std::convert::TryFrom;
 
 const STACKSIZE: usize = 2048;
+const OBJECT_TRUE: Object = Object::Bool(true);
+const OBJECT_FALSE: Object = Object::Bool(false);
 
 pub struct VM<'cmpl> {
     constants: &'cmpl [Object],
@@ -101,6 +103,12 @@ impl VM<'_> {
                     };
                     self.push(result);
                 }
+                OpCode::True => {
+                    self.push(OBJECT_TRUE);
+                }
+                OpCode::False => {
+                    self.push(OBJECT_FALSE);
+                }
                 _ => panic!(format!("not impl {:?}", op)),
             }
             i += 1;
@@ -115,6 +123,6 @@ fn binary_operation(l: i64, r: i64, op: OpCode) -> Object {
         OpCode::Sub => Object::Int(l - r),
         OpCode::Mul => Object::Int(l * r),
         OpCode::Div => Object::Int(l / r),
-        _ => panic!("not impl")
+        _ => panic!("not impl"),
     }
 }

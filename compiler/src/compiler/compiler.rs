@@ -75,6 +75,13 @@ impl Compiler {
                 let op = self.add_constant(int);
                 self.emit(OpCode::Constant, &[op]);
             }
+            Expression::Bool(v) => {
+                if *v {
+                    self.emit(OpCode::True, &[]);
+                } else {
+                    self.emit(OpCode::False, &[]);
+                }
+            }
             _ => panic!(),
         };
     }
