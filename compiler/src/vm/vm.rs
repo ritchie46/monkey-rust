@@ -89,46 +89,32 @@ impl VM<'_> {
                     i += 2;
                     let r = self.push(self.constants[const_index].clone())?;
                 }
-                OpCode::Add => {
-                    // clone one because we cannot borrow mutably twice
-                    let (left, right) = self.pop_2().expect("nothing on the stack");
-                    let result = match (left, right) {
-                        (Object::Int(l), Object::Int(r)) => Object::Int(l + r),
-                        _ => panic!("not impl"),
-                    };
-                    self.push(result);
-                }
                 OpCode::Pop => {
                     self.pop();
                 }
-                OpCode::Sub => {
+                OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Div => {
+                    // clone one because we cannot borrow mutably twice
                     let (left, right) = self.pop_2().expect("nothing on the stack");
                     let result = match (left, right) {
-                        (Object::Int(l), Object::Int(r)) => Object::Int(l - r),
+                        (Object::Int(l), Object::Int(r)) => binary_operation(*l, *r, op),
                         _ => panic!("not impl"),
                     };
                     self.push(result);
                 }
-                OpCode::Mul => {
-                    let (left, right) = self.pop_2().expect("nothing on the stack");
-                    let result = match (left, right) {
-                        (Object::Int(l), Object::Int(r)) => Object::Int(l * r),
-                        _ => panic!("not impl"),
-                    };
-                    self.push(result);
-                }
-                OpCode::Div => {
-                    let (left, right) = self.pop_2().expect("nothing on the stack");
-                    let result = match (left, right) {
-                        (Object::Int(l), Object::Int(r)) => Object::Int(l / r),
-                        _ => panic!("not impl"),
-                    };
-                    self.push(result);
-                }
-                _ => panic!("not impl"),
+                _ => panic!(format!("not impl {:?}", op)),
             }
             i += 1;
         }
         Ok(())
+    }
+}
+
+fn binary_operation(l: i64, r: i64, op: OpCode) -> Object {
+    match op {
+        OpCode::Add => Object::Int(l + r),
+        OpCode::Sub => Object::Int(l - r),
+        OpCode::Mul => Object::Int(l * r),
+        OpCode::Div => Object::Int(l / r),
+        _ => panic!("not impl")
     }
 }
