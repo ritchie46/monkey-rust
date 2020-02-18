@@ -137,6 +137,7 @@ fn binary_operation(l: i64, r: i64, op: OpCode) -> Object {
 fn exec_cmp(left: &Object, right: &Object, op: OpCode) -> Object {
     match (left, right) {
         (Object::Int(l), Object::Int(r)) => exec_int_cmp(*l, *r, op),
+        (Object::Bool(l), Object::Bool(r)) => exec_bool_cmp(*l, *r, op),
         _ => panic!("NOT IMPL"),
     }
 }
@@ -145,6 +146,14 @@ fn exec_int_cmp(left: i64, right: i64, op: OpCode) -> Object {
     match op {
         OpCode::Equal => native_bool_to_object(left == right),
         OpCode::GT => native_bool_to_object(left > right),
+        OpCode::NotEqual => native_bool_to_object(left != right),
+        _ => panic!("unknown operator {:?}", op),
+    }
+}
+
+fn exec_bool_cmp(left: bool, right: bool, op: OpCode) -> Object {
+    match op {
+        OpCode::Equal => native_bool_to_object(left == right),
         OpCode::NotEqual => native_bool_to_object(left != right),
         _ => panic!("unknown operator {:?}", op),
     }

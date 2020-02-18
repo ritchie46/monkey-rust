@@ -4,6 +4,14 @@ use crate::utils::{compile, parse};
 use monkey::eval::object::Object;
 use test::Bencher;
 
+fn run_vm(input: &str) -> Object {
+    let com = compile(&input).unwrap();
+    let bytecode = com.bytecode();
+    let mut vm = VM::new(&bytecode);
+    vm.run();
+    vm.last_popped().clone()
+}
+
 #[test]
 fn test_addition() {
     let inout: &[(&str, i64)] = &[
@@ -45,5 +53,24 @@ fn test_bools() {
         let mut vm = VM::new(&bytecode);
         vm.run();
         assert_eq!(vm.last_popped(), &Object::Bool(*output));
+    }
+}
+
+#[test]
+fn test_cmp() {
+    let inout = &[
+        ("1 < 2", true),
+        ("1 > 2", false),
+        ("1 < 1", false),
+        ("1 > 1", true),
+        ("1 == 1", true),
+        ("1 != 2", true),
+        ("true == true", true),
+        ("false == false", true),
+        ("false != true", true),
+        ("(1 < 2) == true", true),
+    ];
+    for (input, output) in inout {
+        run_vm(&input);
     }
 }
