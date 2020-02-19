@@ -1,6 +1,7 @@
 use crate::code::{Instructions, OpCode, Operand};
 use monkey::eval::object::Object;
 use monkey::parser::ast::{Expression, Statement};
+use std::convert::TryFrom;
 use std::str::Bytes;
 
 #[derive(Debug, Clone)]
@@ -133,12 +134,14 @@ impl Compiler {
                 alternative,
             } => {
                 self.compile_expr(condition);
-                self.emit(OpCode::JumpNotTruthy, &[9999]);
+                let pos_jump_truthy = self.emit(OpCode::JumpNotTruthy, &[9999]);
                 self.compile_stmt(consequence);
-
                 if self.last_instruction_is_pop() {
                     self.remove_last_pop()
                 }
+                // now the length of the consequence is known we back patch the jump
+                let pos_after_consequence = self.instructions.len();
+                self.change_operand(pos_jump_truthy, pos_after_consequence)
             }
             _ => panic!(),
         };
@@ -187,8 +190,20 @@ impl Compiler {
         };
 
         self.instructions.drain(pos..);
-
         let new_last = self.before_last_instruction.take();
         self.last_instruction.replace(new_last.unwrap());
+    }
+
+    fn change_operand(&mut self, position: usize, operand: Operand) {
+        let oc = OpCode::try_from(self.instructions[position])
+            .expect("Could not parse opcode");
+        let new_instr = oc.make(&[operand]);
+        self.replace_instruction(position, new_instr)
+    }
+
+    fn replace_instruction(&mut self, position: usize, instruction: Instructions) {
+        for i in 0..instruction.len() {
+            self.instructions[position + i] = instruction[i]
+        }
     }
 }
