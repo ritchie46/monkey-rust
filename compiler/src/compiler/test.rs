@@ -1,8 +1,11 @@
 use super::compiler::Compiler;
-use crate::code::{OpCode, Operand};
+use crate::code::{read_operands, OpCode, Operand};
 use crate::compiler::compiler::Bytecode;
 use crate::utils::{compile, parse};
 use monkey::eval::object::Object;
+use std::convert::TryFrom;
+
+use OpCode::*;
 
 fn make_instructions(opcodes: &[OpCode], operands: &[&[Operand]]) -> Vec<u8> {
     let mut instr = vec![];
@@ -23,29 +26,47 @@ fn assert_constants(input: &str, check: &[i64]) {
     assert_eq!(bc.constants, &check);
 }
 
+fn write_human_readable(instr: &[u8]) {
+    let mut i = 0;
+    while i < instr.len() {
+        let start_ptr = i;
+        let b = instr[i];
+        let oc = OpCode::try_from(b).unwrap();
+        let operands = read_operands(oc.definition(), &instr[i..]).0;
+        for width in oc.definition() {
+            i += *width
+        }
+        i += 1;
+        println!("{:04}\t{:?}\t\t{:?}", start_ptr, oc, operands)
+    }
+}
+
 fn assert_equal_instr(input: &str, opcodes: &[OpCode], operands: &[&[Operand]]) {
     // If fails test is not properly defined
     assert_eq!(opcodes.len(), operands.len());
     let com = compile(input).unwrap();
     let bc = com.bytecode();
     let instr = make_instructions(opcodes, operands);
+    println!("WANT:");
+    write_human_readable(&instr);
+    println!("\nGOT:");
+    write_human_readable(&bc.instructions);
     assert_eq!(bc.instructions, &instr);
 }
 
 #[test]
 fn test_integer_arithmetic() {
-    use OpCode::*;
     let input = "1 + 2";
     assert_constants(&input, &[1, 2]);
     assert_equal_instr(
         &input,
-        &[OpCode::Constant, OpCode::Constant, OpCode::Add, OpCode::Pop],
+        &[Constant, Constant, Add, Pop],
         &[&[0], &[1], &[], &[]],
     );
     let input = "1; 2";
     assert_equal_instr(
         &input,
-        &[OpCode::Constant, OpCode::Pop, OpCode::Constant, OpCode::Pop],
+        &[Constant, Pop, Constant, Pop],
         &[&[0], &[], &[1], &[]],
     );
     let input = "-1";
@@ -93,10 +114,20 @@ fn test_boolean_exprs() {
 
 #[test]
 fn test_prefix() {
-    use OpCode::*;
     let input = "!false";
     assert_equal_instr(&input, &[False, Bang, Pop], &[&[], &[], &[]]);
     let input = "-1";
     assert_constants(&input, &[1]);
     assert_equal_instr(&input, &[Constant, Minus, Pop], &[&[0], &[], &[]]);
+}
+
+#[test]
+fn test_conditional() {
+    let input = "if (true) { 10 }; 3333;";
+    assert_equal_instr(
+        &input,
+        &[True, JumpNotTruthy, Constant, Pop, Constant, Pop],
+        &[&[], &[7], &[0], &[], &[1], &[]],
+    );
+    assert_constants(&input, &[10, 3333]);
 }

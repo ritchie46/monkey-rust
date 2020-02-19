@@ -1,4 +1,4 @@
-use num_enum::UnsafeFromPrimitive;
+use num_enum::{TryFromPrimitive, UnsafeFromPrimitive};
 use std::collections::HashMap;
 use std::convert::From;
 use std::convert::TryInto;
@@ -7,32 +7,38 @@ use std::fmt::Write;
 pub type Instructions = Vec<u8>;
 pub type Operand = usize;
 
-#[derive(PartialEq, Hash, Eq, Copy, Clone, Debug, UnsafeFromPrimitive)]
+#[derive(
+    PartialEq, Hash, Eq, Copy, Clone, Debug, UnsafeFromPrimitive, TryFromPrimitive,
+)]
 #[repr(u8)]
 pub enum OpCode {
-    Constant, // 0 Operand: constants pool location
-    Add,      // 1 No operands. Take two values from the stack.
-    Pop,      // 2 Pop last element from stack. No operands.
-    Sub,      // 3 No operands. Take two values from the stack.
-    Mul,      // 4 No operands. Take two values from the stack.
-    Div,      // 5 No operands. Take two values from the stack.
-    True,     // 6
-    False,    // 7
-    Equal,    // 8 No operands. Take two values from the stack.
-    NotEqual, // 9 No operands. Take two values from the stack.
-    GT,       // 10 No operands. Take two values from the stack.
-    Minus,    // 11 '-' prefix. No operands. One value from the stack.
-    Bang,     // 12 '!' prefix. No operands. One value from the stack.
+    Constant,      // 0 Operand: constants pool location
+    Add,           // 1 No operands. Take two values from the stack.
+    Pop,           // 2 Pop last element from stack. No operands.
+    Sub,           // 3 No operands. Take two values from the stack.
+    Mul,           // 4 No operands. Take two values from the stack.
+    Div,           // 5 No operands. Take two values from the stack.
+    True,          // 6
+    False,         // 7
+    Equal,         // 8 No operands. Take two values from the stack.
+    NotEqual,      // 9 No operands. Take two values from the stack.
+    GT,            // 10 No operands. Take two values from the stack.
+    Minus,         // 11 '-' prefix. No operands. One value from the stack.
+    Bang,          // 12 '!' prefix. No operands. One value from the stack.
+    JumpNotTruthy, // 13 Operand: jump offset.
+    Jump,          // 14 Operand: jump offset.
 }
 
 impl OpCode {
     fn as_byte(&self) -> u8 {
         *self as u8
     }
-    fn definition(&self) -> Vec<u8> {
+    pub fn definition(&self) -> &'static [usize] {
         match self {
-            OpCode::Constant => vec![2],
-            _ => vec![], // all opcodes wo/ operands
+            OpCode::Constant => &[2],
+            OpCode::JumpNotTruthy => &[2],
+            OpCode::Jump => &[2],
+            _ => &[], // all opcodes wo/ operands
         }
     }
 
@@ -52,7 +58,7 @@ impl OpCode {
     }
 }
 
-fn read_operands(op_width: &[u8], ins: &[u8]) -> (Vec<Operand>, usize) {
+pub fn read_operands(op_width: &[usize], ins: &[u8]) -> (Vec<Operand>, usize) {
     let mut operands = vec![];
     let mut offset = 1; // first one is opcode
     for (i, width) in op_width.iter().enumerate() {
@@ -60,7 +66,7 @@ fn read_operands(op_width: &[u8], ins: &[u8]) -> (Vec<Operand>, usize) {
             2 => operands.push(read_be_u16(&ins[offset..]) as usize),
             _ => panic!("not impl"),
         }
-        offset += *width as usize;
+        offset += *width;
     }
     (operands, offset)
 }

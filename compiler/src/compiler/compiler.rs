@@ -9,9 +9,17 @@ pub struct Bytecode<'compiler> {
     pub constants: &'compiler Vec<Object>,
 }
 
+#[derive(Debug)]
+struct EmittedInstruction {
+    pub oc: OpCode,
+    pub position: usize,
+}
+
 pub struct Compiler {
     instructions: Instructions,
     constants: Vec<Object>,
+    last_instruction: Option<EmittedInstruction>,
+    before_last_instruction: Option<EmittedInstruction>,
 }
 
 impl Compiler {
@@ -19,6 +27,8 @@ impl Compiler {
         Compiler {
             instructions: vec![],
             constants: vec![],
+            last_instruction: None,
+            before_last_instruction: None,
         }
     }
 
@@ -40,6 +50,11 @@ impl Compiler {
             Statement::Expr(expr) => {
                 self.compile_expr(expr);
                 self.emit(OpCode::Pop, &[]);
+            }
+            Statement::Block(stmts) => {
+                for stmt in stmts.iter() {
+                    self.compile_stmt(stmt);
+                }
             }
             _ => panic!(),
         }
@@ -112,6 +127,19 @@ impl Compiler {
                     _ => panic!(),
                 }
             }
+            Expression::IfExpression {
+                condition,
+                consequence,
+                alternative,
+            } => {
+                self.compile_expr(condition);
+                self.emit(OpCode::JumpNotTruthy, &[9999]);
+                self.compile_stmt(consequence);
+
+                if self.last_instruction_is_pop() {
+                    self.remove_last_pop()
+                }
+            }
             _ => panic!(),
         };
     }
@@ -122,15 +150,45 @@ impl Compiler {
         self.constants.len() - 1
     }
 
-    fn emit(&mut self, op: OpCode, operands: &[Operand]) -> usize {
-        let ins = op.make(operands);
-        self.add_instruction(&ins)
+    fn emit(&mut self, oc: OpCode, operands: &[Operand]) -> usize {
+        let ins = oc.make(operands);
+        let pos = self.add_instruction(&ins);
+
+        // Keep track of previous instructions
+        let last = EmittedInstruction { oc, position: pos };
+        self.before_last_instruction = self.last_instruction.replace(last);
+        pos
     }
 
     fn add_instruction(&mut self, instructions: &[u8]) -> usize {
         // position of start new instructions
-        let pos = instructions.len();
+        let pos = self.instructions.len();
         self.instructions.extend_from_slice(instructions);
         pos
+    }
+
+    fn last_instruction_is_pop(&self) -> bool {
+        match &self.last_instruction {
+            Some(emit_instr) => {
+                if let OpCode::Pop = emit_instr.oc {
+                    return true;
+                }
+            }
+            _ => {}
+        }
+
+        false
+    }
+
+    fn remove_last_pop(&mut self) {
+        let pos = match &self.last_instruction {
+            Some(em_ins) => em_ins.position,
+            _ => panic!(),
+        };
+
+        self.instructions.drain(pos..);
+
+        let new_last = self.before_last_instruction.take();
+        self.last_instruction.replace(new_last.unwrap());
     }
 }
