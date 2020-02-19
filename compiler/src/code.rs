@@ -21,6 +21,8 @@ pub enum OpCode {
     Equal,    // 8 No operands. Take two values from the stack.
     NotEqual, // 9 No operands. Take two values from the stack.
     GT,       // 10 No operands. Take two values from the stack.
+    Minus,    // 11 '-' prefix. No operands. One value from the stack.
+    Bang,     // 12 '!' prefix. No operands. One value from the stack.
 }
 
 impl OpCode {

@@ -2,7 +2,6 @@ use super::vm::VM;
 use crate::compiler::compiler::Compiler;
 use crate::utils::{compile, parse};
 use monkey::eval::object::Object;
-use test::Bencher;
 
 fn run_vm(input: &str) -> Object {
     let com = compile(&input).unwrap();
@@ -33,15 +32,6 @@ fn test_addition() {
         vm.run();
         assert_eq!(vm.last_popped(), &Object::Int(*output));
     }
-}
-
-#[bench]
-fn bench_addition(b: &mut Bencher) {
-    let input = "1 + 2";
-    let com = compile(&input).unwrap();
-    let bytecode = com.bytecode();
-    let mut vm = VM::new(&bytecode);
-    b.iter(|| vm.run());
 }
 
 #[test]

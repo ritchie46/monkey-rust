@@ -100,6 +100,18 @@ impl Compiler {
                     self.emit(OpCode::False, &[]);
                 }
             }
+            Expression::Prefix { operator, expr } => {
+                self.compile_expr(expr);
+                match &operator[..] {
+                    "-" => {
+                        self.emit(OpCode::Minus, &[]);
+                    }
+                    "!" => {
+                        self.emit(OpCode::Bang, &[]);
+                    }
+                    _ => panic!(),
+                }
+            }
             _ => panic!(),
         };
     }

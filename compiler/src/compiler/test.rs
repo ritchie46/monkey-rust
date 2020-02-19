@@ -26,7 +26,7 @@ fn assert_constants(input: &str, check: &[i64]) {
 fn assert_equal_instr(input: &str, opcodes: &[OpCode], operands: &[&[Operand]]) {
     // If fails test is not properly defined
     assert_eq!(opcodes.len(), operands.len());
-    let mut com = compile(input).unwrap();
+    let com = compile(input).unwrap();
     let bc = com.bytecode();
     let instr = make_instructions(opcodes, operands);
     assert_eq!(bc.instructions, &instr);
@@ -34,8 +34,8 @@ fn assert_equal_instr(input: &str, opcodes: &[OpCode], operands: &[&[Operand]]) 
 
 #[test]
 fn test_integer_arithmetic() {
+    use OpCode::*;
     let input = "1 + 2";
-
     assert_constants(&input, &[1, 2]);
     assert_equal_instr(
         &input,
@@ -47,7 +47,10 @@ fn test_integer_arithmetic() {
         &input,
         &[OpCode::Constant, OpCode::Pop, OpCode::Constant, OpCode::Pop],
         &[&[0], &[], &[1], &[]],
-    )
+    );
+    let input = "-1";
+    assert_constants(&input, &[1]);
+    assert_equal_instr(&input, &[Constant, Minus, Pop], &[&[0], &[], &[]])
 }
 
 #[test]
