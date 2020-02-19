@@ -7,6 +7,7 @@ use std::convert::TryFrom;
 const STACKSIZE: usize = 2048;
 const OBJECT_TRUE: Object = Object::Bool(true);
 const OBJECT_FALSE: Object = Object::Bool(false);
+const OBJECT_NULL: Object = Object::Null;
 
 pub struct VM<'cmpl> {
     constants: &'cmpl [Object],
@@ -116,6 +117,13 @@ impl VM<'_> {
                     };
                     self.push(result);
                 }
+                OpCode::Minus | OpCode::Bang => {
+                    let result = {
+                        let right = self.pop().expect("nothing on the stack");
+                        exec_prefix(right, op)
+                    };
+                    self.push(result);
+                }
                 _ => panic!(format!("not impl {:?}", op)),
             }
             i += 1;
@@ -164,5 +172,20 @@ fn native_bool_to_object(input: bool) -> Object {
         OBJECT_TRUE
     } else {
         OBJECT_FALSE
+    }
+}
+
+fn exec_prefix(right: &Object, op: OpCode) -> Object {
+    match op {
+        OpCode::Bang => match right {
+            Object::Bool(v) => native_bool_to_object(!*v),
+            Object::Int(i) => native_bool_to_object(!if *i == 0 { false } else { true }),
+            _ => Object::Error(format!("Prefix ! not allowed with {}", right.get_type())),
+        },
+        OpCode::Minus => match right {
+            Object::Int(v) => Object::Int(-*v),
+            _ => Object::Error(format!("Prefix - not allowed with {}", right.get_type())),
+        },
+        _ => panic!("unknown operator {:?}", op),
     }
 }

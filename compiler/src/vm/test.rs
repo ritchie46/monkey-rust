@@ -52,7 +52,7 @@ fn test_cmp() {
         ("1 < 2", true),
         ("1 > 2", false),
         ("1 < 1", false),
-        ("1 > 1", true),
+        ("1 > 1", false),
         ("1 == 1", true),
         ("1 != 2", true),
         ("true == true", true),
@@ -61,6 +61,24 @@ fn test_cmp() {
         ("(1 < 2) == true", true),
     ];
     for (input, output) in inout {
-        run_vm(&input);
+        assert_eq!(run_vm(&input), Object::Bool(*output));
+    }
+}
+
+#[test]
+fn test_prefix() {
+    let inout = &[
+        ("!true", false),
+        ("!!true", true),
+        ("!0", true),
+        ("!5", false),
+        ("!!5", true),
+    ];
+    for (input, output) in inout {
+        assert_eq!(run_vm(&input), Object::Bool(*output));
+    }
+    let inout = &[("-5", -5), ("--5", 5)];
+    for (input, output) in inout {
+        assert_eq!(run_vm(&input), Object::Int(*output));
     }
 }

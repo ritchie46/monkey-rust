@@ -90,3 +90,13 @@ fn test_boolean_exprs() {
     let input = "true == false";
     assert_equal_instr(&input, &[True, False, Equal, Pop], &[&[], &[], &[], &[]]);
 }
+
+#[test]
+fn test_prefix() {
+    use OpCode::*;
+    let input = "!false";
+    assert_equal_instr(&input, &[False, Bang, Pop], &[&[], &[], &[]]);
+    let input = "-1";
+    assert_constants(&input, &[1]);
+    assert_equal_instr(&input, &[Constant, Minus, Pop], &[&[0], &[], &[]]);
+}
