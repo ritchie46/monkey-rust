@@ -13,19 +13,22 @@ const COW_FALSE: Cow<'static, Object> = Cow::Borrowed(&OBJECT_FALSE);
 const OBJECT_NULL: Object = Object::Null;
 const COW_NULL: Cow<'static, Object> = Cow::Borrowed(&OBJECT_NULL);
 const EMPTY_STACK: &'static str = "nothing on the stack";
+const GLOBAL_SIZE: usize = 65536;
 
 pub struct VM<'cmpl> {
     constants: &'cmpl [Object],
     instructions: &'cmpl [u8],
+    globals: Vec<Object>,
 
     pub stack: Vec<Cow<'cmpl, Object>>,
-    sp: usize, // Points to the next free registry on the stack
+    sp: usize, // Stack Pointer: points to the next free registry on the stack
 }
 
 impl VM<'_> {
     pub fn new<'cmpl>(bytecode: &'cmpl Bytecode) -> VM<'cmpl> {
         VM {
             constants: bytecode.constants,
+            globals: vec![OBJECT_NULL; GLOBAL_SIZE],
             instructions: bytecode.instructions,
             stack: vec![OBJECT_NULL.into(); STACKSIZE],
             sp: 0,
@@ -93,8 +96,8 @@ impl<'cmpl> VM<'cmpl> {
     pub fn run(&mut self) -> Result<(), VMError> {
         let mut i = 0;
         while i < self.instructions.len() {
-            let op = unsafe { OpCode::from_unchecked(self.instructions[i]) };
-            match op {
+            let oc = unsafe { OpCode::from_unchecked(self.instructions[i]) };
+            match oc {
                 OpCode::Constant => {
                     let const_index = read_be_u16(&self.instructions[i + 1..]) as usize;
                     i += 2;
@@ -106,7 +109,7 @@ impl<'cmpl> VM<'cmpl> {
                 OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Div => {
                     let (left, right) = self.pop_2().expect(EMPTY_STACK);
                     let result = match (left, right) {
-                        (Object::Int(l), Object::Int(r)) => binary_operation(*l, *r, op),
+                        (Object::Int(l), Object::Int(r)) => binary_operation(*l, *r, oc),
                         _ => panic!("not impl"),
                     };
                     self.push(Cow::from(result));
@@ -121,38 +124,43 @@ impl<'cmpl> VM<'cmpl> {
                     let result = {
                         // left and right should be dropped before getting 2nd mutable borrow.
                         let (left, right) = self.pop_2().expect(EMPTY_STACK);
-                        exec_cmp(left, right, op)
+                        exec_cmp(left, right, oc)
                     };
                     self.push(Cow::from(result));
                 }
                 OpCode::Minus | OpCode::Bang => {
                     let result = {
                         let right = self.pop().expect(EMPTY_STACK);
-                        exec_prefix(right, op)
+                        exec_prefix(right, oc)
                     };
                     self.push(Cow::from(result));
                 }
                 OpCode::Jump => {
                     // TODO: benchmark by directly reading big endian 16 here
-                    let (jump_pos, _) = op.read_operand(&self.instructions[i + 1..]);
+                    let (jump_pos, _) = oc.read_operand(&self.instructions[i + 1..]);
                     i = jump_pos - 1;
                 }
                 OpCode::JumpNotTruthy => {
                     let condition = self.pop().expect(EMPTY_STACK);
                     if !is_truthy(condition) {
                         let (jump_pos, width) =
-                            op.read_operand(&self.instructions[i + 1..]);
+                            oc.read_operand(&self.instructions[i + 1..]);
                         i = jump_pos - 1;
                     } else {
                         // skip jump operand
-                        let width = op.definition()[0];
+                        let width = oc.definition()[0];
                         i += width;
                     }
                 }
                 OpCode::Null => {
                     self.push(COW_NULL);
                 }
-                _ => panic!(format!("not impl {:?}", op)),
+                OpCode::SetGlobal => {
+                    let (index, width) = oc.read_operand(&self.instructions[i + 1..]);
+                    i += width;
+                    self.globals[index] = self.pop().expect(EMPTY_STACK).clone();
+                }
+                _ => panic!(format!("not impl {:?}", oc)),
             }
             i += 1;
         }

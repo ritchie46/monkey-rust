@@ -62,8 +62,9 @@ impl OpCode {
     /// instructions slice starting just behind the OpCode
     /// returns operand and width of operand
     pub fn read_operand(&self, instructions: &[u8]) -> (Operand, usize) {
+        use OpCode::*;
         match self {
-            OpCode::Constant | OpCode::Jump | OpCode::JumpNotTruthy => {
+            Constant | JumpNotTruthy | Jump | SetGlobal | GetGlobal => {
                 (read_be_u16(&instructions[..2]) as usize, 2)
             }
             _ => panic!("no operand after opcode!"),

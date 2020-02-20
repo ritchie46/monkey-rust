@@ -106,3 +106,15 @@ fn test_conditional() {
         assert_eq!(run_vm(&input), *output);
     }
 }
+
+#[test]
+fn test_assignment() {
+    let inout = &[
+        ("let one = 1; one", 1),
+        ("let one = 1; let two = 2; one + two", 3),
+        ("let one = 1; let two = one + one; one + two", 3),
+    ];
+    for (input, output) in inout {
+        assert_eq!(run_vm(&input), Object::Int(*output));
+    }
+}
