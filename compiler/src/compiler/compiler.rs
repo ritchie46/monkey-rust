@@ -1,13 +1,14 @@
 use crate::code::{Instructions, OpCode, Operand};
+use crate::compiler::symbol_table::SymbolTable;
 use monkey::eval::object::Object;
 use monkey::parser::ast::{Expression, Statement};
 use std::convert::TryFrom;
 use std::str::Bytes;
 
 #[derive(Debug, Clone)]
-pub struct Bytecode<'compiler> {
-    pub instructions: &'compiler Instructions,
-    pub constants: &'compiler Vec<Object>,
+pub struct Bytecode<'cmpl> {
+    pub instructions: &'cmpl Instructions,
+    pub constants: &'cmpl Vec<Object>,
 }
 
 #[derive(Debug)]
@@ -16,20 +17,22 @@ struct EmittedInstruction {
     pub position: usize,
 }
 
-pub struct Compiler {
+pub struct Compiler<'cmpl> {
     instructions: Instructions,
     constants: Vec<Object>,
     last_instruction: Option<EmittedInstruction>,
     before_last_instruction: Option<EmittedInstruction>,
+    symbol_table: SymbolTable<'cmpl>,
 }
 
-impl Compiler {
-    pub fn new() -> Compiler {
+impl<'cmpl> Compiler<'cmpl> {
+    pub fn new() -> Compiler<'cmpl> {
         Compiler {
             instructions: vec![],
             constants: vec![],
             last_instruction: None,
             before_last_instruction: None,
+            symbol_table: SymbolTable::new(),
         }
     }
 
@@ -56,6 +59,11 @@ impl Compiler {
                 for stmt in stmts.iter() {
                     self.compile_stmt(stmt);
                 }
+            }
+            Statement::Let(identifier, expr) => {
+                self.compile_expr(expr);
+                let index = self.symbol_table.define(identifier.to_string()).index;
+                self.emit(OpCode::SetGlobal, &[index]);
             }
             _ => panic!(),
         }
@@ -162,6 +170,16 @@ impl Compiler {
                 }
                 let pos_after_alternative = self.instructions.len();
                 self.change_operand(pos_jump, pos_after_alternative);
+            }
+            Expression::Identifier(ident) => {
+                let opt = self.symbol_table.resolve(&ident);
+                match opt {
+                    None => panic!(format!("undefined variable: {}", ident)),
+                    Some(smbl) => {
+                        let index = smbl.index;
+                        self.emit(OpCode::GetGlobal, &[index]);
+                    }
+                }
             }
             _ => panic!(),
         };

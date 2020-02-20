@@ -28,6 +28,8 @@ pub enum OpCode {
     JumpNotTruthy, // 13 Operand: jump offset.
     Jump,          // 14 Operand: jump offset.
     Null,          // 15 No operand.
+    SetGlobal,     // 16 Operand: index. One value from the stack.
+    GetGlobal,     // 17 Operand: index.
 }
 
 impl OpCode {
@@ -35,10 +37,9 @@ impl OpCode {
         *self as u8
     }
     pub fn definition(&self) -> &'static [usize] {
+        use OpCode::*;
         match self {
-            OpCode::Constant => &[2],
-            OpCode::JumpNotTruthy => &[2],
-            OpCode::Jump => &[2],
+            Constant | JumpNotTruthy | Jump | SetGlobal | GetGlobal => &[2],
             _ => &[], // all opcodes wo/ operands
         }
     }

@@ -4,7 +4,6 @@ use crate::compiler::compiler::Bytecode;
 use crate::utils::{compile, parse};
 use monkey::eval::object::Object;
 use std::convert::TryFrom;
-
 use OpCode::*;
 
 fn make_instructions(opcodes: &[OpCode], operands: &[&[Operand]]) -> Vec<u8> {
@@ -159,5 +158,15 @@ fn test_condition_if_else() {
             Pop,
         ],
         &[&[], &[10], &[0], &[13], &[1], &[], &[2], &[]],
+    );
+}
+
+#[test]
+fn test_global_let_stmt() {
+    let input = "let one = 1; let two = 2; one";
+    assert_equal_instr(
+        &input,
+        &[Constant, SetGlobal, Constant, SetGlobal, GetGlobal, Pop],
+        &[&[0], &[0], &[1], &[1], &[0], &[]],
     );
 }

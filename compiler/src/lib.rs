@@ -5,6 +5,7 @@ extern crate lazy_static;
 pub mod code;
 pub mod compiler {
     pub mod compiler;
+    mod symbol_table;
     mod test;
 }
 pub mod vm {
