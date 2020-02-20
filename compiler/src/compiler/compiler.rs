@@ -134,14 +134,36 @@ impl Compiler {
                 alternative,
             } => {
                 self.compile_expr(condition);
-                let pos_jump_truthy = self.emit(OpCode::JumpNotTruthy, &[9999]);
+                // start w/ a made jump position 9999
+                // jump if value on the stack is false
+                let pos_jump_not_truthy = self.emit(OpCode::JumpNotTruthy, &[9999]);
+
+                // if true stmt
                 self.compile_stmt(consequence);
                 if self.last_instruction_is_pop() {
                     self.remove_last_pop()
                 }
-                // now the length of the consequence is known we back patch the jump
-                let pos_after_consequence = self.instructions.len();
-                self.change_operand(pos_jump_truthy, pos_after_consequence)
+
+                if alternative.is_none() {
+                    // now the length of the consequence is known we back patch the jump
+                    let pos_after_consequence = self.instructions.len();
+                    self.change_operand(pos_jump_not_truthy, pos_after_consequence);
+                } else {
+                    // jump if consequence is executed
+                    let pos_jump = self.emit(OpCode::Jump, &[9999]);
+
+                    // back patch the if true jump
+                    let pos_after_consequence = self.instructions.len();
+                    self.change_operand(pos_jump_not_truthy, pos_after_consequence);
+
+                    let alternative = alternative.as_ref().unwrap();
+                    self.compile_stmt(&alternative);
+                    if self.last_instruction_is_pop() {
+                        self.remove_last_pop()
+                    }
+                    let pos_after_alternative = self.instructions.len();
+                    self.change_operand(pos_jump, pos_after_alternative);
+                }
             }
             _ => panic!(),
         };

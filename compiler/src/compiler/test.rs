@@ -122,7 +122,7 @@ fn test_prefix() {
 }
 
 #[test]
-fn test_conditional() {
+fn test_conditional_if() {
     let input = "if (true) { 10 }; 3333;";
     assert_equal_instr(
         &input,
@@ -130,4 +130,25 @@ fn test_conditional() {
         &[&[], &[7], &[0], &[], &[1], &[]],
     );
     assert_constants(&input, &[10, 3333]);
+}
+
+#[test]
+fn test_condition_if_else() {
+    let input = "if (true) { 10 } else {20}; 3333;";
+    assert_equal_instr(
+        &input,
+        // the if else expr has only one pop at the end. As only on stmt is being executed
+        //  we can pop after one of those has been executed
+        &[
+            True,
+            JumpNotTruthy,
+            Constant,
+            Jump,
+            Constant,
+            Pop,
+            Constant,
+            Pop,
+        ],
+        &[&[], &[10], &[0], &[13], &[1], &[], &[2], &[]],
+    );
 }
