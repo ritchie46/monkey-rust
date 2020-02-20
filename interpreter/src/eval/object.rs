@@ -200,3 +200,16 @@ impl fmt::Display for Object {
         }
     }
 }
+
+use std::borrow::Cow;
+impl<'a> From<&'a Object> for Cow<'a, Object> {
+    fn from(s: &'a Object) -> Cow<'a, Object> {
+        Cow::Borrowed(s)
+    }
+}
+
+impl<'a> From<Object> for Cow<'a, Object> {
+    fn from(v: Object) -> Cow<'a, Object> {
+        Cow::Owned(v)
+    }
+}

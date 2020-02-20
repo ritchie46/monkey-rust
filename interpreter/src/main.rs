@@ -1,8 +1,5 @@
 use monkey::{
-    eval::{
-        environment::{Environment},
-        evaluator::eval_program,
-    },
+    eval::{environment::Environment, evaluator::eval_program},
     repl, Lexer, Parser,
 };
 use std::env;

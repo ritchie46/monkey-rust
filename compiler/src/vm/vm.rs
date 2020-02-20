@@ -2,6 +2,7 @@ use crate::code::{read_be_u16, OpCode};
 use crate::compiler::compiler::Bytecode;
 use crate::err::VMError;
 use monkey::eval::{evaluator::is_truthy, object::Object};
+use std::borrow::Cow;
 use std::convert::TryFrom;
 
 const STACKSIZE: usize = 2048;
@@ -14,7 +15,7 @@ pub struct VM<'cmpl> {
     constants: &'cmpl [Object],
     instructions: &'cmpl [u8],
 
-    pub stack: Vec<Object>,
+    pub stack: Vec<Cow<'cmpl, Object>>,
     sp: usize, // Points to the next free registry on the stack
 }
 
@@ -23,10 +24,13 @@ impl VM<'_> {
         VM {
             constants: bytecode.constants,
             instructions: bytecode.instructions,
-            stack: vec![Object::Null; STACKSIZE],
+            stack: vec![OBJECT_NULL.into(); STACKSIZE],
             sp: 0,
         }
     }
+}
+
+impl<'cmpl> VM<'cmpl> {
     fn stack_top(&self) -> Option<&Object> {
         if self.sp == 0 {
             None
@@ -50,7 +54,7 @@ impl VM<'_> {
         if self.sp == 0 {
             return None;
         }
-        let o = &self.stack[self.sp - 1] as *const Object;
+        let o = &*self.stack[self.sp - 1] as *const Object;
         self.sp -= 1;
         Some(o)
     }
@@ -70,11 +74,11 @@ impl VM<'_> {
         Some(two)
     }
 
-    fn push(&mut self, o: Object) -> Result<(), VMError> {
+    fn push(&mut self, o: Cow<'cmpl, Object>) -> Result<(), VMError> {
         if self.sp >= STACKSIZE {
             return Err(VMError::StackOverflow);
         }
-        self.stack[self.sp] = o;
+        self.stack[self.sp] = o.into();
         self.sp += 1;
         Ok(())
     }
@@ -91,7 +95,7 @@ impl VM<'_> {
                 OpCode::Constant => {
                     let const_index = read_be_u16(&self.instructions[i + 1..]) as usize;
                     i += 2;
-                    let r = self.push(self.constants[const_index].clone())?;
+                    let r = self.push(Cow::from(&self.constants[const_index]))?;
                 }
                 OpCode::Pop => {
                     self.pop();
@@ -102,13 +106,13 @@ impl VM<'_> {
                         (Object::Int(l), Object::Int(r)) => binary_operation(*l, *r, op),
                         _ => panic!("not impl"),
                     };
-                    self.push(result);
+                    self.push(Cow::from(result));
                 }
                 OpCode::True => {
-                    self.push(OBJECT_TRUE);
+                    self.push(Cow::from(OBJECT_TRUE));
                 }
                 OpCode::False => {
-                    self.push(OBJECT_FALSE);
+                    self.push(Cow::from(OBJECT_FALSE));
                 }
                 OpCode::Equal | OpCode::NotEqual | OpCode::GT => {
                     let result = {
@@ -116,14 +120,14 @@ impl VM<'_> {
                         let (left, right) = self.pop_2().expect(EMPTY_STACK);
                         exec_cmp(left, right, op)
                     };
-                    self.push(result);
+                    self.push(Cow::from(result));
                 }
                 OpCode::Minus | OpCode::Bang => {
                     let result = {
                         let right = self.pop().expect(EMPTY_STACK);
                         exec_prefix(right, op)
                     };
-                    self.push(result);
+                    self.push(Cow::from(result));
                 }
                 OpCode::Jump => {
                     // TODO: benchmark by directly reading big endian 16 here
