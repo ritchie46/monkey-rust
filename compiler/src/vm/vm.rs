@@ -8,7 +8,10 @@ use std::convert::TryFrom;
 const STACKSIZE: usize = 2048;
 const OBJECT_TRUE: Object = Object::Bool(true);
 const OBJECT_FALSE: Object = Object::Bool(false);
+const COW_TRUE: Cow<'static, Object> = Cow::Borrowed(&OBJECT_TRUE);
+const COW_FALSE: Cow<'static, Object> = Cow::Borrowed(&OBJECT_FALSE);
 const OBJECT_NULL: Object = Object::Null;
+const COW_NULL: Cow<'static, Object> = Cow::Borrowed(&OBJECT_NULL);
 const EMPTY_STACK: &'static str = "nothing on the stack";
 
 pub struct VM<'cmpl> {
@@ -109,10 +112,10 @@ impl<'cmpl> VM<'cmpl> {
                     self.push(Cow::from(result));
                 }
                 OpCode::True => {
-                    self.push(Cow::from(OBJECT_TRUE));
+                    self.push(COW_TRUE);
                 }
                 OpCode::False => {
-                    self.push(Cow::from(OBJECT_FALSE));
+                    self.push(COW_FALSE);
                 }
                 OpCode::Equal | OpCode::NotEqual | OpCode::GT => {
                     let result = {
@@ -145,6 +148,9 @@ impl<'cmpl> VM<'cmpl> {
                         let width = op.definition()[0];
                         i += width;
                     }
+                }
+                OpCode::Null => {
+                    self.push(COW_NULL);
                 }
                 _ => panic!(format!("not impl {:?}", op)),
             }
@@ -202,6 +208,7 @@ fn exec_prefix(right: &Object, op: OpCode) -> Object {
         OpCode::Bang => match right {
             Object::Bool(v) => native_bool_to_object(!*v),
             Object::Int(i) => native_bool_to_object(!if *i == 0 { false } else { true }),
+            Object::Null => OBJECT_TRUE,
             _ => Object::Error(format!("Prefix ! not allowed with {}", right.get_type())),
         },
         OpCode::Minus => match right {

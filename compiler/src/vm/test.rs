@@ -95,4 +95,14 @@ fn test_conditional() {
     for (input, output) in inout {
         assert_eq!(run_vm(&input), Object::Int(*output));
     }
+
+    use Object::{Bool, Null};
+    let inout = &[
+        ("if (1 > 2) { 10 }", Null),
+        ("if (false) { 10 }", Null),
+        ("!(if (false) { 5; })", Bool(true)), // tests that we don't get null from conditional
+    ];
+    for (input, output) in inout {
+        assert_eq!(run_vm(&input), *output);
+    }
 }

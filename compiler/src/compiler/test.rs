@@ -126,8 +126,17 @@ fn test_conditional_if() {
     let input = "if (true) { 10 }; 3333;";
     assert_equal_instr(
         &input,
-        &[True, JumpNotTruthy, Constant, Pop, Constant, Pop],
-        &[&[], &[7], &[0], &[], &[1], &[]],
+        &[
+            True,
+            JumpNotTruthy,
+            Constant,
+            Jump,
+            Null,
+            Pop,
+            Constant,
+            Pop,
+        ],
+        &[&[], &[10], &[0], &[11], &[], &[], &[1], &[]],
     );
     assert_constants(&input, &[10, 3333]);
 }
