@@ -175,10 +175,11 @@ fn eval_if_expr(
     }
 }
 
-fn is_truthy(condition: &Object) -> bool {
+pub fn is_truthy(condition: &Object) -> bool {
     match condition {
         Object::Null => false,
         Object::Bool(false) => false,
+        Object::Int(v) => *v != 0,
         _ => true,
     }
 }

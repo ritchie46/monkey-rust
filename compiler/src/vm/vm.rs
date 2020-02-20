@@ -1,13 +1,14 @@
 use crate::code::{read_be_u16, OpCode};
 use crate::compiler::compiler::Bytecode;
 use crate::err::VMError;
-use monkey::eval::object::Object;
+use monkey::eval::{evaluator::is_truthy, object::Object};
 use std::convert::TryFrom;
 
 const STACKSIZE: usize = 2048;
 const OBJECT_TRUE: Object = Object::Bool(true);
 const OBJECT_FALSE: Object = Object::Bool(false);
 const OBJECT_NULL: Object = Object::Null;
+const EMPTY_STACK: &'static str = "nothing on the stack";
 
 pub struct VM<'cmpl> {
     constants: &'cmpl [Object],
@@ -96,7 +97,7 @@ impl VM<'_> {
                     self.pop();
                 }
                 OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Div => {
-                    let (left, right) = self.pop_2().expect("nothing on the stack");
+                    let (left, right) = self.pop_2().expect(EMPTY_STACK);
                     let result = match (left, right) {
                         (Object::Int(l), Object::Int(r)) => binary_operation(*l, *r, op),
                         _ => panic!("not impl"),
@@ -112,17 +113,34 @@ impl VM<'_> {
                 OpCode::Equal | OpCode::NotEqual | OpCode::GT => {
                     let result = {
                         // left and right should be dropped before getting 2nd mutable borrow.
-                        let (left, right) = self.pop_2().expect("nothing on the stack");
+                        let (left, right) = self.pop_2().expect(EMPTY_STACK);
                         exec_cmp(left, right, op)
                     };
                     self.push(result);
                 }
                 OpCode::Minus | OpCode::Bang => {
                     let result = {
-                        let right = self.pop().expect("nothing on the stack");
+                        let right = self.pop().expect(EMPTY_STACK);
                         exec_prefix(right, op)
                     };
                     self.push(result);
+                }
+                OpCode::Jump => {
+                    // TODO: benchmark by directly reading big endian 16 here
+                    let (jump_pos, _) = op.read_operand(&self.instructions[i + 1..]);
+                    i = jump_pos - 1;
+                }
+                OpCode::JumpNotTruthy => {
+                    let condition = self.pop().expect(EMPTY_STACK);
+                    if !is_truthy(condition) {
+                        let (jump_pos, width) =
+                            op.read_operand(&self.instructions[i + 1..]);
+                        i = jump_pos - 1;
+                    } else {
+                        // skip jump operand
+                        let width = op.definition()[0];
+                        i += width;
+                    }
                 }
                 _ => panic!(format!("not impl {:?}", op)),
             }
