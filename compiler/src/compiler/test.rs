@@ -191,3 +191,13 @@ fn test_array_literals() {
         &[&[0], &[1], &[2], &[3], &[]],
     )
 }
+
+#[test]
+fn test_fn_explicit_return() {
+    let input = "fn() { return 5 + 10 }";
+    assert_equal_instr(
+        &input,
+        &[Constant, Constant, Add, ReturnVal],
+        &[&[0], &[1], &[], &[]]
+    )
+}

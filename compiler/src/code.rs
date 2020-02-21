@@ -31,6 +31,9 @@ pub enum OpCode {
     SetGlobal,     // 16 Operand: index. One value from the stack.
     GetGlobal,     // 17 Operand: index.
     Array,         // 18 Operand: Number of elements in the array.
+    Call,          // 19 No operand. Function is on the stack.
+    ReturnVal,     // 20 No operand. One value from the stack.
+    Return,        // 21 No operand.
 }
 
 impl OpCode {

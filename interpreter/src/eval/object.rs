@@ -28,6 +28,7 @@ pub enum Object {
     Builtin(Builtin),
     Array(Box<Vec<Object>>),
     Hash(Rc<RefCell<HashMap<Object, Object>>>),
+    CompiledFunction(Vec<u8>),
     Ignore,
 }
 
