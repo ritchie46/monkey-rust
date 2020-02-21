@@ -181,7 +181,7 @@ impl<'cmpl> Compiler<'cmpl> {
 
                 // if true stmt
                 self.compile_stmt(consequence);
-                if self.last_instruction_is_pop() {
+                if self.last_instruction_eq(OpCode::Pop) {
                     self.remove_last_pop()
                 }
 
@@ -197,7 +197,7 @@ impl<'cmpl> Compiler<'cmpl> {
                 } else {
                     let alternative = alternative.as_ref().unwrap();
                     self.compile_stmt(&alternative);
-                    if self.last_instruction_is_pop() {
+                    if self.last_instruction_eq(OpCode::Pop) {
                         self.remove_last_pop()
                     }
                 }
@@ -228,8 +228,12 @@ impl<'cmpl> Compiler<'cmpl> {
             Expression::FunctionLiteral { parameters, body } => {
                 self.enter_scope();
                 self.compile_stmt(body);
-                if self.last_instruction_is_pop() {
+                if self.last_instruction_eq(OpCode::Pop) {
                     self.replace_last_pop_with_return()
+                }
+                // TODO: Maybe use only if
+                else if !self.last_instruction_eq(OpCode::ReturnVal) {
+                    self.emit(OpCode::Return, &[]);
                 }
                 let instructions = self.leave_scope();
                 let compiled_fn = Object::CompiledFunction(instructions);
@@ -281,10 +285,10 @@ impl<'cmpl> Compiler<'cmpl> {
         pos
     }
 
-    fn last_instruction_is_pop(&self) -> bool {
+    fn last_instruction_eq(&self, oc: OpCode) -> bool {
         match &self.scopes[self.scope_index].last_instruction {
             Some(emit_instr) => {
-                if let OpCode::Pop = emit_instr.oc {
+                if let oc = emit_instr.oc {
                     return true;
                 }
             }

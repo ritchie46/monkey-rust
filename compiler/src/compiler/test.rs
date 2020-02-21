@@ -15,6 +15,21 @@ fn make_instructions(opcodes: &[OpCode], operands: &[&[Operand]]) -> Vec<u8> {
     instr
 }
 
+fn make_instructions_tpl(opcode_and_operand: &[(OpCode, Option<Operand>)]) -> Vec<u8> {
+    let mut instr = vec![];
+
+    for (oc, op) in opcode_and_operand.iter() {
+        if op.is_none() {
+            let operand = &[];
+            instr.extend_from_slice(&oc.make(operand))
+        } else {
+            let operand = &[op.unwrap()];
+            instr.extend_from_slice(&oc.make(operand))
+        }
+    }
+    instr
+}
+
 fn assert_constants<T: Into<Object> + Clone>(input: &str, check: &[T]) {
     let com = compile(input).unwrap();
     let bc = com.bytecode();
@@ -218,4 +233,17 @@ fn test_fn_explicit_and_implicit_return() {
             ],
         );
     }
+}
+
+#[test]
+fn test_fn_no_return() {
+    let input = "fn() {}";
+    assert_constant_literals(
+        &input,
+        &[Object::CompiledFunction(make_instructions_tpl(&[(
+            OpCode::Return,
+            None,
+        )]))],
+    );
+    assert_equal_instr(&input, &[Constant, Pop], &[&[0], &[]])
 }
