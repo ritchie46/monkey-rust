@@ -292,7 +292,7 @@ impl<'cmpl> Compiler<'cmpl> {
     fn last_instruction_eq(&self, oc: OpCode) -> bool {
         match &self.scopes[self.scope_index].last_instruction {
             Some(emit_instr) => {
-                if let oc = emit_instr.oc {
+                if oc == emit_instr.oc {
                     return true;
                 }
             }

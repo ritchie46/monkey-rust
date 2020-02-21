@@ -2,7 +2,7 @@ use crate::code::{read_be_u16, OpCode, Operand};
 use crate::compiler::compiler::Bytecode;
 use crate::err::VMError;
 use monkey::eval::{evaluator::is_truthy, object::Object};
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
 use std::convert::TryFrom;
 
 const STACKSIZE: usize = 2048;
@@ -14,6 +14,11 @@ const OBJECT_NULL: Object = Object::Null;
 const COW_NULL: Cow<'static, Object> = Cow::Borrowed(&OBJECT_NULL);
 const EMPTY_STACK: &'static str = "nothing on the stack";
 const GLOBAL_SIZE: usize = 65536;
+
+struct Frame {
+    function_instr: Vec<u8>, // Object::CompiledFunction
+    ip: usize,               // instruction pointer
+}
 
 pub struct VM<'cmpl> {
     constants: &'cmpl [Object],
@@ -50,7 +55,7 @@ impl<'cmpl> VM<'cmpl> {
             return None;
         }
         self.sp -= 1;
-        Some(&self.stack[self.sp])
+        self.stack.get(self.sp).map(|x| x.borrow())
     }
 
     /// Use raw pointers to get two multiple objects of the stack without cloning
@@ -98,8 +103,9 @@ impl<'cmpl> VM<'cmpl> {
             let oc = unsafe { OpCode::from_unchecked(self.instructions[i]) };
             match oc {
                 OpCode::Constant => {
-                    let const_index = read_be_u16(&self.instructions[i + 1..]) as usize;
-                    i += 2;
+                    let (const_index, width) =
+                        oc.read_operand(&self.instructions[i + 1..]);
+                    i += width;
                     let r = self.push(Cow::from(&self.constants[const_index]))?;
                 }
                 OpCode::Pop => {

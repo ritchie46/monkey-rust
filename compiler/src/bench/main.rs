@@ -42,3 +42,9 @@ fn bench_array_literal(b: &mut Bencher) {
     input.push_str("1]");
     run_benchmark(b, &input);
 }
+
+#[bench]
+fn bench_assignment(b: &mut Bencher) {
+    let input = "let one = 1; let two = one + one; one + two";
+    run_benchmark(b, &input)
+}
