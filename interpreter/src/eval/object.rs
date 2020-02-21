@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
+use std::borrow::Cow;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Function {
@@ -201,7 +202,6 @@ impl fmt::Display for Object {
     }
 }
 
-use std::borrow::Cow;
 impl<'a> From<&'a Object> for Cow<'a, Object> {
     fn from(s: &'a Object) -> Cow<'a, Object> {
         Cow::Borrowed(s)
@@ -211,5 +211,36 @@ impl<'a> From<&'a Object> for Cow<'a, Object> {
 impl<'a> From<Object> for Cow<'a, Object> {
     fn from(v: Object) -> Cow<'a, Object> {
         Cow::Owned(v)
+    }
+}
+
+impl From<i32> for Object {
+    fn from(i: i32) -> Object {
+        Object::Int(i as i64)
+    }
+}
+
+impl From<i64> for Object {
+    fn from(i: i64) -> Object {
+        Object::Int(i)
+    }
+}
+
+
+impl From<bool> for Object {
+    fn from(b: bool) -> Object {
+        Object::Bool(b)
+    }
+}
+
+impl From<&str> for Object {
+    fn from(s: &str) -> Object {
+        Object::String(s.to_string())
+    }
+}
+
+impl From<String> for Object {
+    fn from(s: String) -> Object {
+        Object::String(s)
     }
 }

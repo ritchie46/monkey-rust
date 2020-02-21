@@ -15,12 +15,13 @@ fn make_instructions(opcodes: &[OpCode], operands: &[&[Operand]]) -> Vec<u8> {
     instr
 }
 
-fn assert_constants(input: &str, check: &[i64]) {
+fn assert_constants<T: Into<Object> + Clone>(input: &str, check: &[T]) {
     let com = compile(input).unwrap();
     let bc = com.bytecode();
     let check = check
         .iter()
-        .map(|x| Object::Int(*x))
+        .cloned()
+        .map(|x| x.into())
         .collect::<Vec<Object>>();
     assert_eq!(bc.constants, &check);
 }
@@ -169,4 +170,10 @@ fn test_global_let_stmt() {
         &[Constant, SetGlobal, Constant, SetGlobal, GetGlobal, Pop],
         &[&[0], &[0], &[1], &[1], &[0], &[]],
     );
+}
+
+#[test]
+fn test_strings() {
+    let input = "monkey";
+    // TODO; test
 }
