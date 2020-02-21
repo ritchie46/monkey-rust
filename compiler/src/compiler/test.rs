@@ -178,3 +178,16 @@ fn test_strings() {
     assert_equal_instr(&input, &[Constant, Pop], &[&[0], &[]]);
     assert_constants(&input, &["monkey"])
 }
+
+#[test]
+fn test_array_literals() {
+    let input = "[]";
+    assert_equal_instr(&input, &[Array, Pop], &[&[0], &[]]);
+
+    let input = "[1, 2, 3]";
+    assert_equal_instr(
+        &input,
+        &[Constant, Constant, Constant, Array, Pop],
+        &[&[0], &[1], &[2], &[3], &[]],
+    )
+}

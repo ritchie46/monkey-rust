@@ -30,6 +30,7 @@ pub enum OpCode {
     Null,          // 15 No operand.
     SetGlobal,     // 16 Operand: index. One value from the stack.
     GetGlobal,     // 17 Operand: index.
+    Array,         // 18 Operand: Number of elements in the array.
 }
 
 impl OpCode {
@@ -39,7 +40,7 @@ impl OpCode {
     pub fn definition(&self) -> &'static [usize] {
         use OpCode::*;
         match self {
-            Constant | JumpNotTruthy | Jump | SetGlobal | GetGlobal => &[2],
+            Constant | JumpNotTruthy | Jump | SetGlobal | GetGlobal | Array => &[2],
             _ => &[], // all opcodes wo/ operands
         }
     }
@@ -64,7 +65,7 @@ impl OpCode {
     pub fn read_operand(&self, instructions: &[u8]) -> (Operand, usize) {
         use OpCode::*;
         match self {
-            Constant | JumpNotTruthy | Jump | SetGlobal | GetGlobal => {
+            Constant | JumpNotTruthy | Jump | SetGlobal | GetGlobal | Array => {
                 (read_be_u16(&instructions[..2]) as usize, 2)
             }
             _ => panic!("no operand after opcode!"),

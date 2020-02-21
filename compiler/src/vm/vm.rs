@@ -1,4 +1,4 @@
-use crate::code::{read_be_u16, OpCode};
+use crate::code::{read_be_u16, OpCode, Operand};
 use crate::compiler::compiler::Bytecode;
 use crate::err::VMError;
 use monkey::eval::{evaluator::is_truthy, object::Object};
@@ -144,8 +144,7 @@ impl<'cmpl> VM<'cmpl> {
                 OpCode::JumpNotTruthy => {
                     let condition = self.pop().expect(EMPTY_STACK);
                     if !is_truthy(condition) {
-                        let (jump_pos, width) =
-                            oc.read_operand(&self.instructions[i + 1..]);
+                        let (jump_pos, width) = self.read_next_operand(oc, i);
                         i = jump_pos - 1;
                     } else {
                         // skip jump operand
@@ -157,21 +156,40 @@ impl<'cmpl> VM<'cmpl> {
                     self.push(COW_NULL);
                 }
                 OpCode::SetGlobal => {
-                    let (index, width) = oc.read_operand(&self.instructions[i + 1..]);
+                    let (index, width) = self.read_next_operand(oc, i);
                     i += width;
                     self.globals[index] = self.pop().expect(EMPTY_STACK).clone();
                 }
                 OpCode::GetGlobal => {
-                    let (index, width) = oc.read_operand(&self.instructions[i + 1..]);
+                    let (index, width) = self.read_next_operand(oc, i);
                     i += width;
                     let global = self.globals[index].clone();
                     self.push(Cow::from(global));
+                }
+                OpCode::Array => {
+                    let (n_elements, width) = self.read_next_operand(oc, i);
+                    i += width;
+                    let array = self.build_array(self.sp - n_elements, self.sp);
+                    self.push(Cow::from(array));
                 }
                 _ => panic!(format!("not impl {:?}", oc)),
             }
             i += 1;
         }
         Ok(())
+    }
+    fn read_next_operand(&self, oc: OpCode, i: usize) -> (Operand, usize) {
+        oc.read_operand(&self.instructions[i + 1..])
+    }
+
+    fn build_array(&self, start_index: usize, end_index: usize) -> Object {
+        let mut elements = Vec::with_capacity(end_index - start_index);
+
+        for i in start_index..end_index {
+            let el = self.stack[i].clone();
+            elements.push(el.into_owned())
+        }
+        Object::new_array(elements)
     }
 }
 

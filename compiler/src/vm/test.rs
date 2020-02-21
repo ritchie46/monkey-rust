@@ -130,3 +130,17 @@ fn test_string_literals() {
         assert_eq!(run_vm(&input), Object::from(*output));
     }
 }
+
+#[test]
+fn test_array_literals() {
+    let inout = &[
+        ("[]", Object::new_array(vec![])),
+        (
+            "[1, 2]",
+            Object::new_array(vec![Object::Int(1), Object::Int(2)]),
+        ),
+    ];
+    for (input, output) in inout {
+        assert_eq!(format!("{}", run_vm(&input)), format!("{}", *output));
+    }
+}

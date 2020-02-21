@@ -186,6 +186,12 @@ impl<'cmpl> Compiler<'cmpl> {
                 let op = self.add_constant(obj);
                 self.emit(OpCode::Constant, &[op]);
             }
+            Expression::ArrayLiteral(exprs) => {
+                for expr in exprs.iter() {
+                    self.compile_expr(expr)
+                }
+                self.emit(OpCode::Array, &[exprs.len()]);
+            }
             _ => panic!(),
         };
     }
