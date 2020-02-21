@@ -110,6 +110,7 @@ impl<'cmpl> VM<'cmpl> {
                     let (left, right) = self.pop_2().expect(EMPTY_STACK);
                     let result = match (left, right) {
                         (Object::Int(l), Object::Int(r)) => binary_operation(*l, *r, oc),
+                        (Object::String(l), Object::String(r)) => string_infix(l, r, oc),
                         _ => panic!("not impl"),
                     };
                     self.push(Cow::from(result));
@@ -217,8 +218,8 @@ fn native_bool_to_object(input: bool) -> Object {
     }
 }
 
-fn exec_prefix(right: &Object, op: OpCode) -> Object {
-    match op {
+fn exec_prefix(right: &Object, oc: OpCode) -> Object {
+    match oc {
         OpCode::Bang => match right {
             Object::Bool(v) => native_bool_to_object(!*v),
             Object::Int(i) => native_bool_to_object(!if *i == 0 { false } else { true }),
@@ -229,6 +230,13 @@ fn exec_prefix(right: &Object, op: OpCode) -> Object {
             Object::Int(v) => Object::Int(-*v),
             _ => Object::Error(format!("Prefix - not allowed with {}", right.get_type())),
         },
-        _ => panic!("unknown operator {:?}", op),
+        _ => panic!("unknown operator {:?}", oc),
+    }
+}
+
+fn string_infix(left: &str, right: &str, oc: OpCode) -> Object {
+    match oc {
+        OpCode::Add => Object::String(format!("{}{}", left, right)),
+        _ => Object::Error(format!("operand {:?} not support on string", oc)),
     }
 }

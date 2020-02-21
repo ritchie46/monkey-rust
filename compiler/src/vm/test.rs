@@ -118,3 +118,15 @@ fn test_assignment() {
         assert_eq!(run_vm(&input), Object::Int(*output));
     }
 }
+
+#[test]
+fn test_string_literals() {
+    let inout = &[
+        (r#""monkey""#, "monkey"),
+        (r#""mon" + "key""#, "monkey"),
+        (r#""mon" + "key" + "banana""#, "monkeybanana"),
+    ];
+    for (input, output) in inout {
+        assert_eq!(run_vm(&input), Object::from(*output));
+    }
+}
