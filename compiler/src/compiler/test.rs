@@ -26,6 +26,12 @@ fn assert_constants<T: Into<Object> + Clone>(input: &str, check: &[T]) {
     assert_eq!(bc.constants, &check[..]);
 }
 
+fn assert_constant_literals(input: &str, check: &[Object]) {
+    let com = compile(input).unwrap();
+    let bc = com.bytecode();
+    assert_eq!(format!("{:?}", bc.constants), format!("{:?}", check));
+}
+
 fn write_human_readable(instr: &[u8]) {
     let mut i = 0;
     while i < instr.len() {
@@ -193,11 +199,23 @@ fn test_array_literals() {
 }
 
 #[test]
-fn test_fn_explicit_return() {
-    let input = "fn() { return 5 + 10 }";
-    assert_equal_instr(
-        &input,
-        &[Constant, Constant, Add, ReturnVal],
-        &[&[0], &[1], &[], &[]],
-    )
+fn test_fn_explicit_and_implicit_return() {
+    let inputs = ["fn() { return 5 + 10 }", "fn() { 5 + 10 }"];
+
+    for input in inputs.iter() {
+        // The function block instruction is not in the main scope.
+        assert_equal_instr(&input, &[Constant, Pop], &[&[2], &[]]);
+
+        assert_constant_literals(
+            &input,
+            &[
+                Object::Int(5),
+                Object::Int(10),
+                Object::CompiledFunction(make_instructions(
+                    &[Constant, Constant, Add, ReturnVal],
+                    &[&[0], &[1], &[], &[]],
+                )),
+            ],
+        );
+    }
 }

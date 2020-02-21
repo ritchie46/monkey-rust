@@ -54,6 +54,17 @@ impl<'cmpl> Compiler<'cmpl> {
         &self.scopes[self.scope_index].instructions
     }
 
+    fn enter_scope(&mut self) {
+        let scope = CompilationScope::new();
+        self.scopes.push(scope);
+        self.scope_index += 1;
+    }
+
+    fn leave_scope(&mut self) -> Vec<u8> {
+        self.scope_index -= 1;
+        self.scopes.pop().unwrap().instructions
+    }
+
     pub fn bytecode(&self) -> Bytecode {
         Bytecode {
             instructions: self.current_instructions(),
@@ -83,7 +94,11 @@ impl<'cmpl> Compiler<'cmpl> {
                 let index = self.symbol_table.define(identifier.to_string()).index;
                 self.emit(OpCode::SetGlobal, &[index]);
             }
-            _ => panic!(),
+            Statement::Return(expr) => {
+                self.compile_expr(expr);
+                self.emit(OpCode::ReturnVal, &[]);
+            }
+            _ => panic!(format!("{:?} not catched", stmt)),
         }
     }
 
@@ -210,8 +225,34 @@ impl<'cmpl> Compiler<'cmpl> {
                 }
                 self.emit(OpCode::Array, &[exprs.len()]);
             }
+            Expression::FunctionLiteral { parameters, body } => {
+                self.enter_scope();
+                self.compile_stmt(body);
+                if self.last_instruction_is_pop() {
+                    self.replace_last_pop_with_return()
+                }
+                let instructions = self.leave_scope();
+                let compiled_fn = Object::CompiledFunction(instructions);
+                let pos = self.add_constant(compiled_fn);
+                self.emit(OpCode::Constant, &[pos]);
+            }
             _ => panic!(),
         };
+    }
+
+    fn replace_last_pop_with_return(&mut self) {
+        let last_pos = self.scopes[self.scope_index]
+            .last_instruction
+            .as_ref()
+            .unwrap()
+            .position;
+        self.replace_instruction(last_pos, OpCode::ReturnVal.make(&[]));
+        // get a mutable reference to the EmittedInstruction in the Option.
+        self.scopes[self.scope_index]
+            .last_instruction
+            .as_mut()
+            .unwrap()
+            .oc = OpCode::ReturnVal;
     }
 
     /// returns memory location
