@@ -247,3 +247,16 @@ fn test_fn_no_return() {
     );
     assert_equal_instr(&input, &[Constant, Pop], &[&[0], &[]])
 }
+
+#[test]
+fn test_fn_calls() {
+    let input = "fn() { 24 }()";
+    assert_equal_instr(&input, &[Constant, Call, Pop], &[&[1], &[], &[]]);
+    let input = "let noArg = fn() { 24 };
+noArg();";
+    assert_equal_instr(
+        &input,
+        &[Constant, SetGlobal, GetGlobal, Call, Pop],
+        &[&[1], &[0], &[0], &[], &[]],
+    );
+}

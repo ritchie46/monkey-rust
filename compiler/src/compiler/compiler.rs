@@ -240,6 +240,10 @@ impl<'cmpl> Compiler<'cmpl> {
                 let pos = self.add_constant(compiled_fn);
                 self.emit(OpCode::Constant, &[pos]);
             }
+            Expression::CallExpr { function, args } => {
+                self.compile_expr(function);
+                self.emit(OpCode::Call, &[]);
+            }
             _ => panic!(),
         };
     }
