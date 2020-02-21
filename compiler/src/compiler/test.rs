@@ -174,6 +174,7 @@ fn test_global_let_stmt() {
 
 #[test]
 fn test_strings() {
-    let input = "monkey";
-    // TODO; test
+    let input = r#""monkey""#;
+    assert_equal_instr(&input, &[Constant, Pop], &[&[0], &[]]);
+    assert_constants(&input, &["monkey"])
 }

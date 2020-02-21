@@ -160,6 +160,12 @@ impl<'cmpl> VM<'cmpl> {
                     i += width;
                     self.globals[index] = self.pop().expect(EMPTY_STACK).clone();
                 }
+                OpCode::GetGlobal => {
+                    let (index, width) = oc.read_operand(&self.instructions[i + 1..]);
+                    i += width;
+                    let global = self.globals[index].clone();
+                    self.push(Cow::from(global));
+                }
                 _ => panic!(format!("not impl {:?}", oc)),
             }
             i += 1;

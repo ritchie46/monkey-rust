@@ -2,12 +2,12 @@ use crate::eval::builtins::{Builtin, BuiltinFn};
 use crate::eval::environment::Env;
 use crate::format;
 use crate::parser::ast::{Expression, Statement};
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
-use std::borrow::Cow;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Function {
@@ -225,7 +225,6 @@ impl From<i64> for Object {
         Object::Int(i)
     }
 }
-
 
 impl From<bool> for Object {
     fn from(b: bool) -> Object {

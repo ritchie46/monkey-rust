@@ -181,6 +181,11 @@ impl<'cmpl> Compiler<'cmpl> {
                     }
                 }
             }
+            Expression::StringLiteral(s) => {
+                let obj = Object::from(&s[..]);
+                let op = self.add_constant(obj);
+                self.emit(OpCode::Constant, &[op]);
+            }
             _ => panic!(),
         };
     }
