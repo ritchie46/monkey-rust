@@ -7,8 +7,8 @@ use std::str::Bytes;
 
 #[derive(Debug, Clone)]
 pub struct Bytecode<'cmpl> {
-    pub instructions: &'cmpl Instructions,
-    pub constants: &'cmpl Vec<Object>,
+    pub instructions: &'cmpl [u8],
+    pub constants: &'cmpl [Object],
 }
 
 #[derive(Debug)]
@@ -17,28 +17,46 @@ struct EmittedInstruction {
     pub position: usize,
 }
 
-pub struct Compiler<'cmpl> {
+struct CompilationScope {
     instructions: Instructions,
-    constants: Vec<Object>,
     last_instruction: Option<EmittedInstruction>,
     before_last_instruction: Option<EmittedInstruction>,
+}
+
+impl CompilationScope {
+    pub fn new() -> CompilationScope {
+        CompilationScope {
+            instructions: vec![],
+            last_instruction: None,
+            before_last_instruction: None,
+        }
+    }
+}
+
+pub struct Compiler<'cmpl> {
+    scopes: Vec<CompilationScope>,
+    scope_index: usize,
+    constants: Vec<Object>,
     symbol_table: SymbolTable<'cmpl>,
 }
 
 impl<'cmpl> Compiler<'cmpl> {
     pub fn new() -> Compiler<'cmpl> {
         Compiler {
-            instructions: vec![],
+            scopes: vec![CompilationScope::new()],
+            scope_index: 0,
             constants: vec![],
-            last_instruction: None,
-            before_last_instruction: None,
             symbol_table: SymbolTable::new(),
         }
     }
 
+    fn current_instructions(&self) -> &[u8] {
+        &self.scopes[self.scope_index].instructions
+    }
+
     pub fn bytecode(&self) -> Bytecode {
         Bytecode {
-            instructions: &self.instructions,
+            instructions: self.current_instructions(),
             constants: &self.constants,
         }
     }
@@ -156,7 +174,7 @@ impl<'cmpl> Compiler<'cmpl> {
                 let pos_jump = self.emit(OpCode::Jump, &[9999]);
 
                 // now the length of the consequence is known we back patch the jump
-                let pos_after_consequence = self.instructions.len();
+                let pos_after_consequence = self.current_instructions().len();
                 self.change_operand(pos_jump_not_truthy, pos_after_consequence);
 
                 if alternative.is_none() {
@@ -168,7 +186,7 @@ impl<'cmpl> Compiler<'cmpl> {
                         self.remove_last_pop()
                     }
                 }
-                let pos_after_alternative = self.instructions.len();
+                let pos_after_alternative = self.current_instructions().len();
                 self.change_operand(pos_jump, pos_after_alternative);
             }
             Expression::Identifier(ident) => {
@@ -208,19 +226,22 @@ impl<'cmpl> Compiler<'cmpl> {
 
         // Keep track of previous instructions
         let last = EmittedInstruction { oc, position: pos };
-        self.before_last_instruction = self.last_instruction.replace(last);
+        self.scopes[self.scope_index].before_last_instruction =
+            self.scopes[self.scope_index].last_instruction.replace(last);
         pos
     }
 
     fn add_instruction(&mut self, instructions: &[u8]) -> usize {
         // position of start new instructions
-        let pos = self.instructions.len();
-        self.instructions.extend_from_slice(instructions);
+        let pos = self.current_instructions().len();
+        self.scopes[self.scope_index]
+            .instructions
+            .extend_from_slice(instructions);
         pos
     }
 
     fn last_instruction_is_pop(&self) -> bool {
-        match &self.last_instruction {
+        match &self.scopes[self.scope_index].last_instruction {
             Some(emit_instr) => {
                 if let OpCode::Pop = emit_instr.oc {
                     return true;
@@ -233,18 +254,20 @@ impl<'cmpl> Compiler<'cmpl> {
     }
 
     fn remove_last_pop(&mut self) {
-        let pos = match &self.last_instruction {
+        let pos = match &self.scopes[self.scope_index].last_instruction {
             Some(em_ins) => em_ins.position,
             _ => panic!(),
         };
 
-        self.instructions.drain(pos..);
-        let new_last = self.before_last_instruction.take();
-        self.last_instruction.replace(new_last.unwrap());
+        self.scopes[self.scope_index].instructions.drain(pos..);
+        let new_last = self.scopes[self.scope_index].before_last_instruction.take();
+        self.scopes[self.scope_index]
+            .last_instruction
+            .replace(new_last.unwrap());
     }
 
     fn change_operand(&mut self, position: usize, operand: Operand) {
-        let oc = OpCode::try_from(self.instructions[position])
+        let oc = OpCode::try_from(self.scopes[self.scope_index].instructions[position])
             .expect("Could not parse opcode");
         let new_instr = oc.make(&[operand]);
         self.replace_instruction(position, new_instr)
@@ -252,7 +275,7 @@ impl<'cmpl> Compiler<'cmpl> {
 
     fn replace_instruction(&mut self, position: usize, instruction: Instructions) {
         for i in 0..instruction.len() {
-            self.instructions[position + i] = instruction[i]
+            self.scopes[self.scope_index].instructions[position + i] = instruction[i]
         }
     }
 }

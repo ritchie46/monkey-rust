@@ -23,7 +23,7 @@ fn assert_constants<T: Into<Object> + Clone>(input: &str, check: &[T]) {
         .cloned()
         .map(|x| x.into())
         .collect::<Vec<Object>>();
-    assert_eq!(bc.constants, &check);
+    assert_eq!(bc.constants, &check[..]);
 }
 
 fn write_human_readable(instr: &[u8]) {
@@ -51,7 +51,7 @@ fn assert_equal_instr(input: &str, opcodes: &[OpCode], operands: &[&[Operand]]) 
     write_human_readable(&instr);
     println!("\nGOT:");
     write_human_readable(&bc.instructions);
-    assert_eq!(bc.instructions, &instr);
+    assert_eq!(bc.instructions, &instr[..]);
 }
 
 #[test]
@@ -198,6 +198,6 @@ fn test_fn_explicit_return() {
     assert_equal_instr(
         &input,
         &[Constant, Constant, Add, ReturnVal],
-        &[&[0], &[1], &[], &[]]
+        &[&[0], &[1], &[], &[]],
     )
 }
