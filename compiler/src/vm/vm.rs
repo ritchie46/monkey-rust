@@ -49,9 +49,8 @@ impl<'cmpl> VM<'cmpl> {
         if self.sp == 0 {
             return None;
         }
-        let o = &self.stack[self.sp - 1];
         self.sp -= 1;
-        Some(o)
+        Some(&self.stack[self.sp])
     }
 
     /// Use raw pointers to get two multiple objects of the stack without cloning

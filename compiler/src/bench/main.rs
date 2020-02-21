@@ -32,3 +32,13 @@ fn bench_constant_stacking(b: &mut Bencher) {
     }
     run_benchmark(b, &input);
 }
+
+#[bench]
+fn bench_array_literal(b: &mut Bencher) {
+    let mut input = "[".to_string();
+    for i in 0..100 {
+        input.push_str(&format!("{}, ", i))
+    }
+    input.push_str("1]");
+    run_benchmark(b, &input);
+}
