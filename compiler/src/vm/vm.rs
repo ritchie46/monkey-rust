@@ -4,6 +4,8 @@ use crate::err::VMError;
 use monkey::eval::{evaluator::is_truthy, object::Object};
 use std::borrow::{Borrow, Cow};
 use std::convert::TryFrom;
+use std::mem;
+use std::ptr::null;
 
 const STACKSIZE: usize = 2048;
 const OBJECT_TRUE: Object = Object::Bool(true);
@@ -16,6 +18,7 @@ const EMPTY_STACK: &'static str = "nothing on the stack";
 const GLOBAL_SIZE: usize = 65536;
 const MAX_FRAMES: usize = 1024;
 
+#[derive(Clone)]
 struct Frame {
     function_instr: Vec<u8>, // Object::CompiledFunction
     ip: usize,               // instruction pointer
@@ -48,8 +51,11 @@ impl VM<'_> {
     pub fn new<'cmpl>(bytecode: &'cmpl Bytecode) -> VM<'cmpl> {
         let main_instructions = bytecode.instructions.to_vec();
         let main_frame = Frame::new(main_instructions);
-        let mut frames = Vec::with_capacity(MAX_FRAMES);
-        frames.push(main_frame);
+        let nullframe = Frame::new(vec![]);
+        let mut frames = vec![nullframe; MAX_FRAMES];
+        frames[0] = main_frame;
+        // let mut frames = Vec::with_capacity(MAX_FRAMES);
+        // frames.push(main_frame);
         VM {
             constants: bytecode.constants,
             globals: vec![OBJECT_NULL; GLOBAL_SIZE],
@@ -94,6 +100,15 @@ impl<'cmpl> VM<'cmpl> {
         }
         self.sp -= 1;
         self.stack.get(self.sp).map(|x| x.borrow())
+    }
+
+    fn pop_and_own(&mut self) -> Option<Object> {
+        if self.sp == 0 {
+            return None;
+        }
+        self.sp -= 1;
+        let a = mem::replace(&mut self.stack[self.sp], COW_NULL);
+        Some(a.into_owned())
     }
 
     /// Use raw pointers to get two multiple objects of the stack without cloning
@@ -219,6 +234,28 @@ impl<'cmpl> VM<'cmpl> {
                     self.current_frame().ip += width;
                     let array = self.build_array(self.sp - n_elements, self.sp);
                     self.push(Cow::from(array));
+                }
+                OpCode::Call => {
+                    let fun = self.stack_top().unwrap();
+                    if let Object::CompiledFunction(instr) = fun {
+                        // TODO: borrow instructions. Lifetime mess.
+                        let frame = Frame::new(instr.clone());
+                        self.push_frame(frame);
+                        // don't increment the instruction pointer this loop.
+                        continue;
+                    } else {
+                        panic!("calling non-function")
+                    }
+                }
+                OpCode::ReturnVal => {
+                    // TODO: Maybe use pop_and_own, but then last_popped does not work
+                    let return_value = self.pop().expect(EMPTY_STACK).clone();
+                    // leave function scope
+                    self.pop_frame();
+                    // pop just executed compiled function from the stack.
+                    self.pop();
+
+                    self.push(Cow::from(return_value));
                 }
                 _ => panic!(format!("not impl {:?}", oc)),
             }

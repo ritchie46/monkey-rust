@@ -144,3 +144,26 @@ fn test_array_literals() {
         assert_eq!(format!("{}", run_vm(&input)), format!("{}", *output));
     }
 }
+
+#[test]
+fn test_fn_call() {
+    let inout = &[
+        ("let fivePlusTen = fn() { 5 + 10; }; fivePlusTen();", 15),
+        (
+            "let one = fn() { 1; };
+let two = fn() { 2; };
+one() + two()",
+            3,
+        ),
+        (
+            "let a = fn() { 1 };
+let b = fn() { a() + 1 };
+let c = fn() { b() + 1 };
+c();",
+            3,
+        ),
+    ];
+    for (input, output) in inout {
+        assert_eq!(run_vm(&input), Object::from(*output));
+    }
+}
