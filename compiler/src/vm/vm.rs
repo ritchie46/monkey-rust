@@ -14,34 +14,72 @@ const OBJECT_NULL: Object = Object::Null;
 const COW_NULL: Cow<'static, Object> = Cow::Borrowed(&OBJECT_NULL);
 const EMPTY_STACK: &'static str = "nothing on the stack";
 const GLOBAL_SIZE: usize = 65536;
+const MAX_FRAMES: usize = 1024;
 
 struct Frame {
     function_instr: Vec<u8>, // Object::CompiledFunction
     ip: usize,               // instruction pointer
 }
 
+impl Frame {
+    fn new(function_instr: Vec<u8>) -> Frame {
+        Frame {
+            function_instr,
+            ip: 0, // -1 not possible
+        }
+    }
+
+    fn instructions(&self) -> &[u8] {
+        &self.function_instr
+    }
+}
+
 pub struct VM<'cmpl> {
     constants: &'cmpl [Object],
-    instructions: &'cmpl [u8],
     globals: Vec<Object>,
 
     pub stack: Vec<Cow<'cmpl, Object>>,
     sp: usize, // Stack Pointer: points to the next free registry on the stack
+    frames: Vec<Frame>,
+    frames_index: usize,
 }
 
 impl VM<'_> {
     pub fn new<'cmpl>(bytecode: &'cmpl Bytecode) -> VM<'cmpl> {
+        let main_instructions = bytecode.instructions.to_vec();
+        let main_frame = Frame::new(main_instructions);
+        let mut frames = Vec::with_capacity(MAX_FRAMES);
+        frames.push(main_frame);
         VM {
             constants: bytecode.constants,
             globals: vec![OBJECT_NULL; GLOBAL_SIZE],
-            instructions: bytecode.instructions,
             stack: vec![OBJECT_NULL.into(); STACKSIZE],
             sp: 0,
+            frames,
+            frames_index: 1,
         }
     }
 }
 
 impl<'cmpl> VM<'cmpl> {
+    fn current_frame(&mut self) -> &mut Frame {
+        &mut self.frames[self.frames_index - 1]
+    }
+
+    fn current_instructions(&self) -> &[u8] {
+        self.frames[self.frames_index - 1].instructions()
+    }
+
+    fn push_frame(&mut self, f: Frame) {
+        self.frames[self.frames_index] = f;
+        self.frames_index += 1
+    }
+
+    fn pop_frame(&mut self) -> &Frame {
+        self.frames_index -= 1;
+        &self.frames[self.frames_index]
+    }
+
     fn stack_top(&self) -> Option<&Object> {
         if self.sp == 0 {
             None
@@ -98,14 +136,14 @@ impl<'cmpl> VM<'cmpl> {
     }
 
     pub fn run(&mut self) -> Result<(), VMError> {
-        let mut i = 0;
-        while i < self.instructions.len() {
-            let oc = unsafe { OpCode::from_unchecked(self.instructions[i]) };
+        while self.current_frame().ip < self.current_frame().instructions().len() {
+            let i = self.current_frame().ip;
+            let oc = unsafe { OpCode::from_unchecked(self.current_instructions()[i]) };
             match oc {
                 OpCode::Constant => {
                     let (const_index, width) =
-                        oc.read_operand(&self.instructions[i + 1..]);
-                    i += width;
+                        oc.read_operand(&self.current_instructions()[i + 1..]);
+                    self.current_frame().ip += width;
                     let r = self.push(Cow::from(&self.constants[const_index]))?;
                 }
                 OpCode::Pop => {
@@ -143,48 +181,50 @@ impl<'cmpl> VM<'cmpl> {
                 }
                 OpCode::Jump => {
                     // TODO: benchmark by directly reading big endian 16 here
-                    let (jump_pos, _) = oc.read_operand(&self.instructions[i + 1..]);
-                    i = jump_pos - 1;
+                    let (jump_pos, _) =
+                        oc.read_operand(&self.current_instructions()[i + 1..]);
+                    self.current_frame().ip = jump_pos - 1;
                 }
                 OpCode::JumpNotTruthy => {
                     let condition = self.pop().expect(EMPTY_STACK);
                     if !is_truthy(condition) {
-                        let (jump_pos, width) = self.read_next_operand(oc, i);
-                        i = jump_pos - 1;
+                        let (jump_pos, width) =
+                            oc.read_operand(&self.current_instructions()[i + 1..]);
+                        self.current_frame().ip = jump_pos - 1;
                     } else {
                         // skip jump operand
                         let width = oc.definition()[0];
-                        i += width;
+                        self.current_frame().ip += width;
                     }
                 }
                 OpCode::Null => {
                     self.push(COW_NULL);
                 }
                 OpCode::SetGlobal => {
-                    let (index, width) = self.read_next_operand(oc, i);
-                    i += width;
+                    let (index, width) =
+                        oc.read_operand(&self.current_instructions()[i + 1..]);
+                    self.current_frame().ip += width;
                     self.globals[index] = self.pop().expect(EMPTY_STACK).clone();
                 }
                 OpCode::GetGlobal => {
-                    let (index, width) = self.read_next_operand(oc, i);
-                    i += width;
+                    let (index, width) =
+                        oc.read_operand(&self.current_instructions()[i + 1..]);
+                    self.current_frame().ip += width;
                     let global = self.globals[index].clone();
                     self.push(Cow::from(global));
                 }
                 OpCode::Array => {
-                    let (n_elements, width) = self.read_next_operand(oc, i);
-                    i += width;
+                    let (n_elements, width) =
+                        oc.read_operand(&self.current_instructions()[i + 1..]);
+                    self.current_frame().ip += width;
                     let array = self.build_array(self.sp - n_elements, self.sp);
                     self.push(Cow::from(array));
                 }
                 _ => panic!(format!("not impl {:?}", oc)),
             }
-            i += 1;
+            self.current_frame().ip += 1;
         }
         Ok(())
-    }
-    fn read_next_operand(&self, oc: OpCode, i: usize) -> (Operand, usize) {
-        oc.read_operand(&self.instructions[i + 1..])
     }
 
     fn build_array(&self, start_index: usize, end_index: usize) -> Object {
