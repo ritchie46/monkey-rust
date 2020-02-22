@@ -1,14 +1,12 @@
-use super::vm::VM;
+use super::vm::{run_vm, VM};
 use crate::compiler::compiler::Compiler;
 use crate::utils::{compile, parse};
 use monkey::eval::object::Object;
 
-fn run_vm(input: &str) -> Object {
+fn compile_and_run_vm(input: &str) -> Object {
     let com = compile(&input).unwrap();
     let bytecode = com.bytecode();
-    let mut vm = VM::new(&bytecode);
-    vm.run();
-    vm.last_popped().clone()
+    run_vm(&bytecode).unwrap_or(Object::Error("something went wrong".to_string()))
 }
 
 #[test]
@@ -24,25 +22,16 @@ fn test_addition() {
         ("5 + 2 * 10", 25),
         ("5 * (2 + 10)", 60),
     ];
-
-    for (input, output) in inout.iter() {
-        let com = compile(&input).unwrap();
-        let bytecode = com.bytecode();
-        let mut vm = VM::new(&bytecode);
-        vm.run();
-        assert_eq!(vm.last_popped(), &Object::Int(*output));
+    for (input, output) in inout {
+        assert_eq!(compile_and_run_vm(&input), Object::from(*output));
     }
 }
 
 #[test]
 fn test_bools() {
     let inout = &[("true", true), ("false", false)];
-    for (input, output) in inout.iter() {
-        let com = compile(&input).unwrap();
-        let bytecode = com.bytecode();
-        let mut vm = VM::new(&bytecode);
-        vm.run();
-        assert_eq!(vm.last_popped(), &Object::Bool(*output));
+    for (input, output) in inout {
+        assert_eq!(compile_and_run_vm(&input), Object::from(*output));
     }
 }
 
@@ -61,7 +50,7 @@ fn test_cmp() {
         ("(1 < 2) == true", true),
     ];
     for (input, output) in inout {
-        assert_eq!(run_vm(&input), Object::Bool(*output));
+        assert_eq!(compile_and_run_vm(&input), Object::Bool(*output));
     }
 }
 
@@ -75,11 +64,11 @@ fn test_prefix() {
         ("!!5", true),
     ];
     for (input, output) in inout {
-        assert_eq!(run_vm(&input), Object::Bool(*output));
+        assert_eq!(compile_and_run_vm(&input), Object::Bool(*output));
     }
     let inout = &[("-5", -5), ("--5", 5)];
     for (input, output) in inout {
-        assert_eq!(run_vm(&input), Object::Int(*output));
+        assert_eq!(compile_and_run_vm(&input), Object::Int(*output));
     }
 }
 
@@ -93,7 +82,7 @@ fn test_conditional() {
         ("if (1 > 2) { 10 } else { 20 }", 20),
     ];
     for (input, output) in inout {
-        assert_eq!(run_vm(&input), Object::Int(*output));
+        assert_eq!(compile_and_run_vm(&input), Object::Int(*output));
     }
 
     use Object::{Bool, Null};
@@ -103,7 +92,7 @@ fn test_conditional() {
         ("!(if (false) { 5; })", Bool(true)), // tests that we don't get null from conditional
     ];
     for (input, output) in inout {
-        assert_eq!(run_vm(&input), *output);
+        assert_eq!(compile_and_run_vm(&input), *output);
     }
 }
 
@@ -115,7 +104,7 @@ fn test_assignment() {
         ("let one = 1; let two = one + one; one + two", 3),
     ];
     for (input, output) in inout {
-        assert_eq!(run_vm(&input), Object::Int(*output));
+        assert_eq!(compile_and_run_vm(&input), Object::Int(*output));
     }
 }
 
@@ -127,7 +116,7 @@ fn test_string_literals() {
         (r#""mon" + "key" + "banana""#, "monkeybanana"),
     ];
     for (input, output) in inout {
-        assert_eq!(run_vm(&input), Object::from(*output));
+        assert_eq!(compile_and_run_vm(&input), Object::from(*output));
     }
 }
 
@@ -141,7 +130,10 @@ fn test_array_literals() {
         ),
     ];
     for (input, output) in inout {
-        assert_eq!(format!("{}", run_vm(&input)), format!("{}", *output));
+        assert_eq!(
+            format!("{}", compile_and_run_vm(&input)),
+            format!("{}", *output)
+        );
     }
 }
 
@@ -164,6 +156,6 @@ c();",
         ),
     ];
     for (input, output) in inout {
-        assert_eq!(run_vm(&input), Object::from(*output));
+        assert_eq!(compile_and_run_vm(&input), Object::from(*output));
     }
 }

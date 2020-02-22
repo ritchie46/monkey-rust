@@ -19,7 +19,7 @@ const GLOBAL_SIZE: usize = 65536;
 const MAX_FRAMES: usize = 1024;
 
 #[derive(Clone)]
-struct Frame {
+pub struct Frame {
     function_instr: Vec<u8>, // Object::CompiledFunction
     ip: usize,               // instruction pointer
 }
@@ -37,28 +37,26 @@ impl Frame {
     }
 }
 
+#[derive(Clone)]
 pub struct VM<'cmpl> {
-    constants: &'cmpl [Object],
-    globals: Vec<Object>,
-
+    pub constants: &'cmpl [Object],
+    // pub globals: Vec<Object>,
     pub stack: Vec<Cow<'cmpl, Object>>,
-    sp: usize, // Stack Pointer: points to the next free registry on the stack
-    frames: Vec<Frame>,
-    frames_index: usize,
+    pub sp: usize, // Stack Pointer: points to the next free registry on the stack
+    pub frames: Vec<Frame>,
+    pub frames_index: usize,
 }
 
 impl VM<'_> {
     pub fn new<'cmpl>(bytecode: &'cmpl Bytecode) -> VM<'cmpl> {
         let main_instructions = bytecode.instructions.to_vec();
         let main_frame = Frame::new(main_instructions);
-        let nullframe = Frame::new(vec![]);
-        let mut frames = vec![nullframe; MAX_FRAMES];
-        frames[0] = main_frame;
-        // let mut frames = Vec::with_capacity(MAX_FRAMES);
-        // frames.push(main_frame);
+        let mut frames = Vec::with_capacity(MAX_FRAMES);
+        frames.push(main_frame);
+
         VM {
             constants: bytecode.constants,
-            globals: vec![OBJECT_NULL; GLOBAL_SIZE],
+
             stack: vec![OBJECT_NULL.into(); STACKSIZE],
             sp: 0,
             frames,
@@ -68,25 +66,25 @@ impl VM<'_> {
 }
 
 impl<'cmpl> VM<'cmpl> {
-    fn current_frame(&mut self) -> &mut Frame {
-        &mut self.frames[self.frames_index - 1]
+    pub fn current_frame(&mut self) -> &mut Frame {
+        self.frames.last_mut().unwrap()
     }
 
-    fn current_instructions(&self) -> &[u8] {
+    pub fn current_instructions(&self) -> &[u8] {
         self.frames[self.frames_index - 1].instructions()
     }
 
-    fn push_frame(&mut self, f: Frame) {
-        self.frames[self.frames_index] = f;
+    pub fn push_frame(&mut self, f: Frame) {
+        self.frames.push(f);
         self.frames_index += 1
     }
 
-    fn pop_frame(&mut self) -> &Frame {
+    pub fn pop_frame(&mut self) -> Frame {
         self.frames_index -= 1;
-        &self.frames[self.frames_index]
+        self.frames.pop().unwrap()
     }
 
-    fn stack_top(&self) -> Option<&Object> {
+    pub fn stack_top(&self) -> Option<&Object> {
         if self.sp == 0 {
             None
         } else {
@@ -94,7 +92,7 @@ impl<'cmpl> VM<'cmpl> {
         }
     }
 
-    fn pop(&mut self) -> Option<&Object> {
+    pub fn pop(&mut self) -> Option<&Object> {
         if self.sp == 0 {
             return None;
         }
@@ -102,18 +100,9 @@ impl<'cmpl> VM<'cmpl> {
         self.stack.get(self.sp).map(|x| x.borrow())
     }
 
-    fn pop_and_own(&mut self) -> Option<Object> {
-        if self.sp == 0 {
-            return None;
-        }
-        self.sp -= 1;
-        let a = mem::replace(&mut self.stack[self.sp], COW_NULL);
-        Some(a.into_owned())
-    }
-
     /// Use raw pointers to get two multiple objects of the stack without cloning
     /// Needs unsafe code to dereference.
-    fn pop_raw(&mut self) -> Option<*const Object> {
+    pub fn pop_raw(&mut self) -> Option<*const Object> {
         if self.sp == 0 {
             return None;
         }
@@ -124,7 +113,7 @@ impl<'cmpl> VM<'cmpl> {
 
     /// Pop two references from the stack without cloning.
     /// The borrowck doesn't let use call self.pop twice wo/ a clone.
-    fn pop_2(&mut self) -> Option<(&Object, &Object)> {
+    pub fn pop_2(&mut self) -> Option<(&Object, &Object)> {
         if self.sp <= 1 {
             return None;
         }
@@ -137,7 +126,7 @@ impl<'cmpl> VM<'cmpl> {
         Some(two)
     }
 
-    fn push(&mut self, o: Cow<'cmpl, Object>) -> Result<(), VMError> {
+    pub fn push(&mut self, o: Cow<'cmpl, Object>) -> Result<(), VMError> {
         if self.sp >= STACKSIZE {
             return Err(VMError::StackOverflow);
         }
@@ -148,120 +137,6 @@ impl<'cmpl> VM<'cmpl> {
 
     pub fn last_popped(&self) -> &Object {
         &self.stack[self.sp]
-    }
-
-    pub fn run(&mut self) -> Result<(), VMError> {
-        while self.current_frame().ip < self.current_frame().instructions().len() {
-            let i = self.current_frame().ip;
-            let oc = unsafe { OpCode::from_unchecked(self.current_instructions()[i]) };
-            match oc {
-                OpCode::Constant => {
-                    let (const_index, width) =
-                        oc.read_operand(&self.current_instructions()[i + 1..]);
-                    self.current_frame().ip += width;
-                    let r = self.push(Cow::from(&self.constants[const_index]))?;
-                }
-                OpCode::Pop => {
-                    self.pop();
-                }
-                OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Div => {
-                    let (left, right) = self.pop_2().expect(EMPTY_STACK);
-                    let result = match (left, right) {
-                        (Object::Int(l), Object::Int(r)) => binary_operation(*l, *r, oc),
-                        (Object::String(l), Object::String(r)) => string_infix(l, r, oc),
-                        _ => panic!("not impl"),
-                    };
-                    self.push(Cow::from(result));
-                }
-                OpCode::True => {
-                    self.push(COW_TRUE);
-                }
-                OpCode::False => {
-                    self.push(COW_FALSE);
-                }
-                OpCode::Equal | OpCode::NotEqual | OpCode::GT => {
-                    let result = {
-                        // left and right should be dropped before getting 2nd mutable borrow.
-                        let (left, right) = self.pop_2().expect(EMPTY_STACK);
-                        exec_cmp(left, right, oc)
-                    };
-                    self.push(Cow::from(result));
-                }
-                OpCode::Minus | OpCode::Bang => {
-                    let result = {
-                        let right = self.pop().expect(EMPTY_STACK);
-                        exec_prefix(right, oc)
-                    };
-                    self.push(Cow::from(result));
-                }
-                OpCode::Jump => {
-                    // TODO: benchmark by directly reading big endian 16 here
-                    let (jump_pos, _) =
-                        oc.read_operand(&self.current_instructions()[i + 1..]);
-                    self.current_frame().ip = jump_pos - 1;
-                }
-                OpCode::JumpNotTruthy => {
-                    let condition = self.pop().expect(EMPTY_STACK);
-                    if !is_truthy(condition) {
-                        let (jump_pos, width) =
-                            oc.read_operand(&self.current_instructions()[i + 1..]);
-                        self.current_frame().ip = jump_pos - 1;
-                    } else {
-                        // skip jump operand
-                        let width = oc.definition()[0];
-                        self.current_frame().ip += width;
-                    }
-                }
-                OpCode::Null => {
-                    self.push(COW_NULL);
-                }
-                OpCode::SetGlobal => {
-                    let (index, width) =
-                        oc.read_operand(&self.current_instructions()[i + 1..]);
-                    self.current_frame().ip += width;
-                    self.globals[index] = self.pop().expect(EMPTY_STACK).clone();
-                }
-                OpCode::GetGlobal => {
-                    let (index, width) =
-                        oc.read_operand(&self.current_instructions()[i + 1..]);
-                    self.current_frame().ip += width;
-                    let global = self.globals[index].clone();
-                    self.push(Cow::from(global));
-                }
-                OpCode::Array => {
-                    let (n_elements, width) =
-                        oc.read_operand(&self.current_instructions()[i + 1..]);
-                    self.current_frame().ip += width;
-                    let array = self.build_array(self.sp - n_elements, self.sp);
-                    self.push(Cow::from(array));
-                }
-                OpCode::Call => {
-                    let fun = self.stack_top().unwrap();
-                    if let Object::CompiledFunction(instr) = fun {
-                        // TODO: borrow instructions. Lifetime mess.
-                        let frame = Frame::new(instr.clone());
-                        self.push_frame(frame);
-                        // don't increment the instruction pointer this loop.
-                        continue;
-                    } else {
-                        panic!("calling non-function")
-                    }
-                }
-                OpCode::ReturnVal => {
-                    // TODO: Maybe use pop_and_own, but then last_popped does not work
-                    let return_value = self.pop().expect(EMPTY_STACK).clone();
-                    // leave function scope
-                    self.pop_frame();
-                    // pop just executed compiled function from the stack.
-                    self.pop();
-
-                    self.push(Cow::from(return_value));
-                }
-                _ => panic!(format!("not impl {:?}", oc)),
-            }
-            self.current_frame().ip += 1;
-        }
-        Ok(())
     }
 
     fn build_array(&self, start_index: usize, end_index: usize) -> Object {
@@ -339,4 +214,118 @@ fn string_infix(left: &str, right: &str, oc: OpCode) -> Object {
         OpCode::Add => Object::String(format!("{}{}", left, right)),
         _ => Object::Error(format!("operand {:?} not support on string", oc)),
     }
+}
+
+pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
+    let mut vm = VM::new(bc);
+    let mut globals = vec![OBJECT_NULL; GLOBAL_SIZE];
+
+    while vm.current_frame().ip < vm.current_frame().instructions().len() {
+        let i = vm.current_frame().ip;
+        let oc = unsafe { OpCode::from_unchecked(vm.current_instructions()[i]) };
+        match oc {
+            OpCode::Constant => {
+                let (const_index, width) =
+                    oc.read_operand(&vm.current_instructions()[i + 1..]);
+                vm.current_frame().ip += width;
+                let r = vm.push(Cow::from(&vm.constants[const_index]))?;
+            }
+            OpCode::Pop => {
+                vm.pop();
+            }
+            OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Div => {
+                let (left, right) = vm.pop_2().expect(EMPTY_STACK);
+                let result = match (left, right) {
+                    (Object::Int(l), Object::Int(r)) => binary_operation(*l, *r, oc),
+                    (Object::String(l), Object::String(r)) => string_infix(l, r, oc),
+                    _ => panic!("not impl"),
+                };
+                vm.push(Cow::from(result));
+            }
+            OpCode::True => {
+                vm.push(COW_TRUE);
+            }
+            OpCode::False => {
+                vm.push(COW_FALSE);
+            }
+            OpCode::Equal | OpCode::NotEqual | OpCode::GT => {
+                let result = {
+                    // left and right should be dropped before getting 2nd mutable borrow.
+                    let (left, right) = vm.pop_2().expect(EMPTY_STACK);
+                    exec_cmp(left, right, oc)
+                };
+                vm.push(Cow::from(result));
+            }
+            OpCode::Minus | OpCode::Bang => {
+                let result = {
+                    let right = vm.pop().expect(EMPTY_STACK);
+                    exec_prefix(right, oc)
+                };
+                vm.push(Cow::from(result));
+            }
+            OpCode::Jump => {
+                // TODO: benchmark by directly reading big endian 16 here
+                let (jump_pos, _) = oc.read_operand(&vm.current_instructions()[i + 1..]);
+                vm.current_frame().ip = jump_pos - 1;
+            }
+            OpCode::JumpNotTruthy => {
+                let condition = vm.pop().expect(EMPTY_STACK);
+                if !is_truthy(condition) {
+                    let (jump_pos, width) =
+                        oc.read_operand(&vm.current_instructions()[i + 1..]);
+                    vm.current_frame().ip = jump_pos - 1;
+                } else {
+                    // skip jump operand
+                    let width = oc.definition()[0];
+                    vm.current_frame().ip += width;
+                }
+            }
+            OpCode::Null => {
+                vm.push(COW_NULL);
+            }
+            OpCode::SetGlobal => {
+                let (index, width) = oc.read_operand(&vm.current_instructions()[i + 1..]);
+                vm.current_frame().ip += width;
+                globals[index] = vm.pop().expect(EMPTY_STACK).clone();
+            }
+            OpCode::GetGlobal => {
+                let (index, width) = oc.read_operand(&vm.current_instructions()[i + 1..]);
+                vm.current_frame().ip += width;
+                let global = globals[index].clone();
+                vm.push(Cow::from(global));
+            }
+            OpCode::Array => {
+                let (n_elements, width) =
+                    oc.read_operand(&vm.current_instructions()[i + 1..]);
+                vm.current_frame().ip += width;
+                let array = vm.build_array(vm.sp - n_elements, vm.sp);
+                vm.push(Cow::from(array));
+            }
+            OpCode::Call => {
+                let fun = vm.stack_top().unwrap();
+                if let Object::CompiledFunction(instr) = fun {
+                    // TODO: borrow instructions. Lifetime mess.
+                    let frame = Frame::new(instr.clone());
+                    vm.push_frame(frame);
+                    // don't increment the instruction pointer this loop.
+                    continue;
+                } else {
+                    panic!("calling non-function")
+                }
+            }
+            OpCode::ReturnVal => {
+                // TODO: Maybe use pop_and_own, but then last_popped does not work
+                let return_value = vm.pop().expect(EMPTY_STACK).clone();
+                // leave function scope
+                vm.pop_frame();
+                // pop just executed compiled function from the stack.
+                vm.pop();
+
+                vm.push(Cow::from(return_value));
+            }
+            _ => panic!(format!("not impl {:?}", oc)),
+        }
+        vm.current_frame().ip += 1;
+    }
+    Ok(vm.last_popped().clone())
 }

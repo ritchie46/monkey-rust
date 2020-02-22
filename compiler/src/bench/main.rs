@@ -2,14 +2,13 @@
 extern crate test;
 use compiler::compiler::compiler::Compiler;
 use compiler::utils::compile;
-use compiler::vm::vm::VM;
+use compiler::vm::vm::{run_vm, VM};
 use test::Bencher;
 
 fn run_benchmark(b: &mut Bencher, input: &str) {
     let com = compile(&input).unwrap();
     let bytecode = com.bytecode();
-    let mut vm = VM::new(&bytecode);
-    b.iter(|| vm.run());
+    b.iter(|| run_vm(&bytecode));
 }
 
 #[bench]
