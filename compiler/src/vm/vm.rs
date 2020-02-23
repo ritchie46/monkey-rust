@@ -312,6 +312,9 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                 vm.push(Cow::from(array));
             }
             OpCode::Call => {
+                let (n_args, width) =
+                    oc.read_operand(&vm.current_instructions()[i + 1..]);
+                vm.current_frame().ip += 1;
                 let fun = vm.stack_top().unwrap();
                 if let Object::CompiledFunction {
                     instructions,

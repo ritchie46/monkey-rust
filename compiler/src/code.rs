@@ -31,7 +31,7 @@ pub enum OpCode {
     SetGlobal,     // 16 Operand: index. One value from the stack.
     GetGlobal,     // 17 Operand: index.
     Array,         // 18 Operand: Number of elements in the array.
-    Call,          // 19 No operand. Function is on the stack.
+    Call,          // 19 Operand: no. of args. Function is on the stack.
     ReturnVal,     // 20 No operand. One value from the stack.
     Return,        // 21 No operand.
     SetLocal,      // 22 Operand: index. One value from the stack.
@@ -46,7 +46,7 @@ impl OpCode {
         use OpCode::*;
         match self {
             Constant | JumpNotTruthy | Jump | SetGlobal | GetGlobal | Array => &[2],
-            SetLocal | GetLocal => &[1],
+            SetLocal | GetLocal | Call => &[1],
             _ => &[], // all opcodes wo/ operands
         }
     }
@@ -74,7 +74,7 @@ impl OpCode {
             Constant | JumpNotTruthy | Jump | SetGlobal | GetGlobal | Array => {
                 (read_be_u16(&instructions[..2]) as usize, 2)
             }
-            SetLocal | GetLocal => (instructions[0] as usize, 1),
+            SetLocal | GetLocal | Call => (instructions[0] as usize, 1),
             _ => panic!("no operand after opcode!"),
         }
     }

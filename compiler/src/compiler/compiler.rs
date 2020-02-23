@@ -263,7 +263,7 @@ impl Compiler {
             }
             Expression::CallExpr { function, args } => {
                 self.compile_expr(function);
-                self.emit(OpCode::Call, &[]);
+                self.emit(OpCode::Call, &[args.len()]);
             }
             _ => panic!(),
         };
