@@ -1,3 +1,4 @@
+#![cfg(test)]
 use super::vm::{run_vm, VM};
 use crate::compiler::compiler::Compiler;
 use crate::utils::{compile, parse};
@@ -157,5 +158,26 @@ c();",
     ];
     for (input, output) in inout {
         assert_eq!(compile_and_run_vm(&input), Object::from(*output));
+    }
+}
+
+#[test]
+fn test_fn_no_return() {
+    let inout = &[
+        (
+            "let noReturn = fn() { };
+noReturn();",
+            Object::Null,
+        ),
+        (
+            "let noReturn = fn() { };
+let noReturnTwo = fn() { noReturn(); };
+noReturn();
+noReturnTwo();",
+            Object::Null,
+        ),
+    ];
+    for (input, output) in inout {
+        assert_eq!(compile_and_run_vm(&input), *output)
     }
 }

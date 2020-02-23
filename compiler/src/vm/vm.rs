@@ -323,6 +323,11 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
 
                 vm.push(Cow::from(return_value));
             }
+            OpCode::Return => {
+                vm.pop_frame();
+                vm.pop();
+                vm.push(COW_NULL);
+            }
             _ => panic!(format!("not impl {:?}", oc)),
         }
         vm.current_frame().ip += 1;
