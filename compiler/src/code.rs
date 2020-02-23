@@ -34,6 +34,8 @@ pub enum OpCode {
     Call,          // 19 No operand. Function is on the stack.
     ReturnVal,     // 20 No operand. One value from the stack.
     Return,        // 21 No operand.
+    SetLocal,      // 22 Operand: index. One value from the stack.
+    GetLocal,      // 23 Operand: index.
 }
 
 impl OpCode {
@@ -44,6 +46,7 @@ impl OpCode {
         use OpCode::*;
         match self {
             Constant | JumpNotTruthy | Jump | SetGlobal | GetGlobal | Array => &[2],
+            SetLocal | GetLocal => &[1],
             _ => &[], // all opcodes wo/ operands
         }
     }
@@ -52,11 +55,11 @@ impl OpCode {
         let mut instr = self.as_byte().to_be_bytes().to_vec();
 
         let op_width = self.definition();
-
         for (i, operand) in operands.iter().enumerate() {
             let width = op_width[i];
             match width {
                 2 => instr.extend_from_slice(&(*operand as u16).to_be_bytes()),
+                1 => instr.push(*operand as u8),
                 _ => panic!("not impl"),
             }
         }
@@ -71,6 +74,7 @@ impl OpCode {
             Constant | JumpNotTruthy | Jump | SetGlobal | GetGlobal | Array => {
                 (read_be_u16(&instructions[..2]) as usize, 2)
             }
+            SetLocal | GetLocal => (instructions[0] as usize, 1),
             _ => panic!("no operand after opcode!"),
         }
     }
@@ -82,6 +86,7 @@ pub fn read_operands(op_width: &[usize], ins: &[u8]) -> (Vec<Operand>, usize) {
     for (i, width) in op_width.iter().enumerate() {
         match width {
             2 => operands.push(read_be_u16(&ins[offset..]) as usize),
+            1 => operands.push(ins[offset] as usize),
             _ => panic!("not impl"),
         }
         offset += *width;

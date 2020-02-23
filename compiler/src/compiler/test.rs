@@ -260,3 +260,44 @@ noArg();";
         &[&[1], &[0], &[0], &[], &[]],
     );
 }
+
+#[test]
+fn test_local_assignment() {
+    // only global
+    let input = "let num = 55;
+fn() { num }";
+    assert_constant_literals(
+        &input,
+        &[
+            Object::Int(55),
+            Object::CompiledFunction(make_instructions_tpl(&[
+                (GetGlobal, Some(0)),
+                (ReturnVal, None),
+            ])),
+        ],
+    );
+    assert_equal_instr(
+        &input,
+        &[Constant, SetGlobal, Constant, Pop],
+        &[&[0], &[0], &[1], &[]],
+    );
+
+    // local assignment
+    let input = "fn() {
+let num = 55;
+num
+}";
+    assert_constant_literals(
+        &input,
+        &[
+            Object::Int(55),
+            Object::CompiledFunction(make_instructions_tpl(&[
+                (Constant, Some(0)),
+                (SetLocal, Some(0)),
+                (GetLocal, Some(0)),
+                (ReturnVal, None),
+            ])),
+        ],
+    );
+    assert_equal_instr(&input, &[Constant, Pop], &[&[1], &[]])
+}

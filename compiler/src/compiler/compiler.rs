@@ -2,7 +2,9 @@ use crate::code::{Instructions, OpCode, Operand};
 use crate::compiler::symbol_table::SymbolTable;
 use monkey::eval::object::Object;
 use monkey::parser::ast::{Expression, Statement};
+use std::cell::{Ref, RefCell, RefMut};
 use std::convert::TryFrom;
+use std::rc::Rc;
 use std::str::Bytes;
 
 #[derive(Debug, Clone)]
@@ -33,20 +35,20 @@ impl CompilationScope {
     }
 }
 
-pub struct Compiler<'cmpl> {
+pub struct Compiler {
     scopes: Vec<CompilationScope>,
     scope_index: usize,
     constants: Vec<Object>,
-    symbol_table: SymbolTable<'cmpl>,
+    symbol_table: Option<Rc<RefCell<SymbolTable>>>,
 }
 
-impl<'cmpl> Compiler<'cmpl> {
-    pub fn new() -> Compiler<'cmpl> {
+impl Compiler {
+    pub fn new() -> Compiler {
         Compiler {
             scopes: vec![CompilationScope::new()],
             scope_index: 0,
             constants: vec![],
-            symbol_table: SymbolTable::new(),
+            symbol_table: Some(SymbolTable::new()),
         }
     }
 
@@ -58,9 +60,16 @@ impl<'cmpl> Compiler<'cmpl> {
         let scope = CompilationScope::new();
         self.scopes.push(scope);
         self.scope_index += 1;
+
+        let tmp = SymbolTable::new_enclosed(self.symbol_table.take().unwrap());
+        self.symbol_table = Some(tmp);
     }
 
     fn leave_scope(&mut self) -> Vec<u8> {
+        // Todo: instead of rc clone take ownership
+        let tmp = self.symbol_table.take().unwrap();
+        let outer = tmp.borrow().outer.as_ref().unwrap().clone();
+        self.symbol_table = Some(outer);
         self.scope_index -= 1;
         self.scopes.pop().unwrap().instructions
     }
@@ -91,7 +100,10 @@ impl<'cmpl> Compiler<'cmpl> {
             }
             Statement::Let(identifier, expr) => {
                 self.compile_expr(expr);
-                let index = self.symbol_table.define(identifier.to_string()).index;
+                let index = self
+                    .get_symbol_table_mut()
+                    .define(identifier.to_string())
+                    .index;
                 self.emit(OpCode::SetGlobal, &[index]);
             }
             Statement::Return(expr) => {
@@ -205,7 +217,7 @@ impl<'cmpl> Compiler<'cmpl> {
                 self.change_operand(pos_jump, pos_after_alternative);
             }
             Expression::Identifier(ident) => {
-                let opt = self.symbol_table.resolve(&ident);
+                let opt = self.get_symbol_table().resolve(&ident);
                 match opt {
                     None => panic!(format!("undefined variable: {}", ident)),
                     Some(smbl) => {
@@ -326,5 +338,12 @@ impl<'cmpl> Compiler<'cmpl> {
         for i in 0..instruction.len() {
             self.scopes[self.scope_index].instructions[position + i] = instruction[i]
         }
+    }
+
+    fn get_symbol_table_mut(&self) -> RefMut<SymbolTable> {
+        self.symbol_table.as_ref().unwrap().borrow_mut()
+    }
+    fn get_symbol_table(&self) -> Ref<SymbolTable> {
+        self.symbol_table.as_ref().unwrap().borrow()
     }
 }
