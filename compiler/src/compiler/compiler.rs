@@ -244,6 +244,13 @@ impl Compiler {
             }
             Expression::FunctionLiteral { parameters, body } => {
                 self.enter_scope();
+                {
+                    let mut tbl = self.get_symbol_table_mut();
+                    for p in parameters.iter() {
+                        tbl.define(format!("{}", p));
+                    }
+                }
+
                 self.compile_stmt(body);
                 if self.last_instruction_eq(OpCode::Pop) {
                     self.replace_last_pop_with_return()
@@ -252,6 +259,7 @@ impl Compiler {
                 else if !self.last_instruction_eq(OpCode::ReturnVal) {
                     self.emit(OpCode::Return, &[]);
                 }
+
                 let n_locals = self.get_symbol_table().num_definitions;
                 let instructions = self.leave_scope();
                 let compiled_fn = Object::CompiledFunction {
@@ -263,6 +271,11 @@ impl Compiler {
             }
             Expression::CallExpr { function, args } => {
                 self.compile_expr(function);
+
+                for a in args.iter() {
+                    self.compile_expr(a);
+                }
+
                 self.emit(OpCode::Call, &[args.len()]);
             }
             _ => panic!(),

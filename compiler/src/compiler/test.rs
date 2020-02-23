@@ -310,3 +310,16 @@ num
     );
     assert_equal_instr(&input, &[Constant, Pop], &[&[1], &[]])
 }
+
+#[test]
+fn test_arguments() {
+    let input = "let manyArg = fn(a, b, c) { a; b; c };
+manyArg(24, 25, 26);";
+    assert_equal_instr(
+        &input,
+        &[
+            Constant, SetGlobal, GetGlobal, Constant, Constant, Constant, Call, Pop,
+        ],
+        &[&[0], &[0], &[0], &[1], &[2], &[3], &[3], &[]],
+    )
+}
