@@ -2,7 +2,7 @@ use crate::code::{read_be_u16, OpCode, Operand};
 use crate::compiler::compiler::Bytecode;
 use crate::err::VMError;
 use monkey::eval::{evaluator::is_truthy, object::Object};
-use std::borrow::{Borrow, BorrowMut, Cow};
+use std::borrow::{Borrow, BorrowMut};
 use std::convert::TryFrom;
 use std::mem;
 use std::ptr::null;
@@ -10,10 +10,7 @@ use std::ptr::null;
 const STACKSIZE: usize = 2048;
 const OBJECT_TRUE: Object = Object::Bool(true);
 const OBJECT_FALSE: Object = Object::Bool(false);
-const COW_TRUE: Cow<'static, Object> = Cow::Borrowed(&OBJECT_TRUE);
-const COW_FALSE: Cow<'static, Object> = Cow::Borrowed(&OBJECT_FALSE);
 const OBJECT_NULL: Object = Object::Null;
-const COW_NULL: Cow<'static, Object> = Cow::Borrowed(&OBJECT_NULL);
 const EMPTY_STACK: &'static str = "nothing on the stack";
 const GLOBAL_SIZE: usize = 65536;
 const MAX_FRAMES: usize = 1024;
@@ -43,7 +40,7 @@ impl Frame {
 pub struct VM<'cmpl> {
     pub constants: &'cmpl [Object],
     // pub globals: Vec<Object>,
-    pub stack: Vec<Cow<'cmpl, Object>>,
+    pub stack: Vec<Object>,
     pub sp: usize, // Stack Pointer: points to the next free registry on the stack
     pub frames: Vec<Frame>,
     pub frames_index: usize,
@@ -59,7 +56,7 @@ impl VM<'_> {
         VM {
             constants: bytecode.constants,
 
-            stack: vec![OBJECT_NULL.into(); STACKSIZE],
+            stack: vec![OBJECT_NULL; STACKSIZE],
             sp: 0,
             frames,
             frames_index: 1,
@@ -99,7 +96,7 @@ impl<'cmpl> VM<'cmpl> {
             return None;
         }
         self.sp -= 1;
-        self.stack.get(self.sp).map(|x| x.borrow())
+        self.stack.get(self.sp)
     }
 
     pub fn pop_mut(&mut self) -> Option<&mut Object> {
@@ -107,7 +104,7 @@ impl<'cmpl> VM<'cmpl> {
             return None;
         }
         self.sp -= 1;
-        self.stack.get_mut(self.sp).map(|x| x.to_mut())
+        self.stack.get_mut(self.sp)
     }
 
     /// Use raw pointers to get two multiple objects of the stack without cloning
@@ -116,7 +113,7 @@ impl<'cmpl> VM<'cmpl> {
         if self.sp == 0 {
             return None;
         }
-        let o = &*self.stack[self.sp - 1] as *const Object;
+        let o = &self.stack[self.sp - 1] as *const Object;
         self.sp -= 1;
         Some(o)
     }
@@ -136,11 +133,11 @@ impl<'cmpl> VM<'cmpl> {
         Some(two)
     }
 
-    pub fn push(&mut self, o: Cow<'cmpl, Object>) -> Result<(), VMError> {
+    pub fn push(&mut self, o: Object) -> Result<(), VMError> {
         if self.sp >= STACKSIZE {
             return Err(VMError::StackOverflow);
         }
-        self.stack[self.sp] = o.into();
+        self.stack[self.sp] = o;
         self.sp += 1;
         Ok(())
     }
@@ -154,7 +151,7 @@ impl<'cmpl> VM<'cmpl> {
 
         for i in start_index..end_index {
             let el = self.stack[i].clone();
-            elements.push(el.into_owned())
+            elements.push(el)
         }
         Object::new_array(elements)
     }
@@ -238,7 +235,7 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                 let (const_index, width) =
                     oc.read_operand(&vm.current_instructions()[i + 1..]);
                 vm.current_frame().ip += width;
-                let r = vm.push(Cow::from(&vm.constants[const_index]))?;
+                let r = vm.push(vm.constants[const_index].clone())?;
             }
             OpCode::Pop => {
                 vm.pop();
@@ -250,13 +247,13 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                     (Object::String(l), Object::String(r)) => string_infix(l, r, oc),
                     _ => panic!("not impl"),
                 };
-                vm.push(Cow::from(result));
+                vm.push(result);
             }
             OpCode::True => {
-                vm.push(COW_TRUE);
+                vm.push(OBJECT_TRUE);
             }
             OpCode::False => {
-                vm.push(COW_FALSE);
+                vm.push(OBJECT_FALSE);
             }
             OpCode::Equal | OpCode::NotEqual | OpCode::GT => {
                 let result = {
@@ -264,14 +261,14 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                     let (left, right) = vm.pop_2().expect(EMPTY_STACK);
                     exec_cmp(left, right, oc)
                 };
-                vm.push(Cow::from(result));
+                vm.push(result);
             }
             OpCode::Minus | OpCode::Bang => {
                 let result = {
                     let right = vm.pop().expect(EMPTY_STACK);
                     exec_prefix(right, oc)
                 };
-                vm.push(Cow::from(result));
+                vm.push(result);
             }
             OpCode::Jump => {
                 // TODO: benchmark by directly reading big endian 16 here
@@ -291,7 +288,7 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                 }
             }
             OpCode::Null => {
-                vm.push(COW_NULL);
+                vm.push(OBJECT_NULL);
             }
             OpCode::SetGlobal => {
                 let (index, width) = oc.read_operand(&vm.current_instructions()[i + 1..]);
@@ -302,37 +299,35 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                 let (index, width) = oc.read_operand(&vm.current_instructions()[i + 1..]);
                 vm.current_frame().ip += width;
                 let global = globals[index].clone();
-                vm.push(Cow::from(global));
+                vm.push(global);
             }
             OpCode::Array => {
                 let (n_elements, width) =
                     oc.read_operand(&vm.current_instructions()[i + 1..]);
                 vm.current_frame().ip += width;
                 let array = vm.build_array(vm.sp - n_elements, vm.sp);
-                vm.push(Cow::from(array));
+                vm.push(array);
             }
             OpCode::Call => {
                 let (n_args, width) =
                     oc.read_operand(&vm.current_instructions()[i + 1..]);
                 vm.current_frame().ip += width;
 
-                let fun = vm
-                    .stack
-                    .get(vm.sp - 1 - n_args)
-                    .map(|x| x.borrow())
-                    .unwrap();
+                // We can replace the location on the stack because we know the function
+                // get's popped off after execution
+                let tmp = vm.stack.get_mut(vm.sp - 1 - n_args).unwrap();
+                let mut fun = mem::replace(tmp, OBJECT_NULL);
+                let fun = fun;
 
                 if let Object::CompiledFunction {
                     instructions,
                     n_locals,
                 } = fun
                 {
-                    // TODO: borrow instructions. Lifetime mess.
-                    // TODO: Swap instructions w/ null instructions constant.
-                    let frame = Frame::new(instructions.clone(), vm.sp - n_args);
+                    let frame = Frame::new(instructions, vm.sp - n_args);
 
                     // leave space on the stack for local bindings
-                    vm.sp = frame.base_pointer + *n_locals;
+                    vm.sp = frame.base_pointer + n_locals;
                     vm.push_frame(frame);
                     // don't increment the instruction pointer this loop.
                     continue;
@@ -350,7 +345,7 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                 };
                 vm.sp = base_pointer - 1;
 
-                vm.push(Cow::from(return_value));
+                vm.push(return_value);
             }
             OpCode::Return => {
                 let base_pointer = {
@@ -358,7 +353,7 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                     frame.base_pointer
                 };
                 vm.sp = base_pointer - 1;
-                vm.push(COW_NULL);
+                vm.push(OBJECT_NULL);
             }
             OpCode::SetLocal => {
                 // Get index of local variable
