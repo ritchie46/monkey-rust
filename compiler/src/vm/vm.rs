@@ -2,7 +2,7 @@ use crate::code::{read_be_u16, OpCode, Operand};
 use crate::compiler::compiler::Bytecode;
 use crate::err::VMError;
 use monkey::eval::{evaluator::is_truthy, object::Object};
-use std::borrow::{Borrow, Cow};
+use std::borrow::{Borrow, BorrowMut, Cow};
 use std::convert::TryFrom;
 use std::mem;
 use std::ptr::null;
@@ -22,13 +22,15 @@ const MAX_FRAMES: usize = 1024;
 pub struct Frame {
     function_instr: Vec<u8>, // Object::CompiledFunction
     ip: usize,               // instruction pointer
+    base_pointer: usize,
 }
 
 impl Frame {
-    fn new(function_instr: Vec<u8>) -> Frame {
+    fn new(function_instr: Vec<u8>, base_pointer: usize) -> Frame {
         Frame {
             function_instr,
             ip: 0, // -1 not possible
+            base_pointer,
         }
     }
 
@@ -50,7 +52,7 @@ pub struct VM<'cmpl> {
 impl VM<'_> {
     pub fn new<'cmpl>(bytecode: &'cmpl Bytecode) -> VM<'cmpl> {
         let main_instructions = bytecode.instructions.to_vec();
-        let main_frame = Frame::new(main_instructions);
+        let main_frame = Frame::new(main_instructions, 0);
         let mut frames = Vec::with_capacity(MAX_FRAMES);
         frames.push(main_frame);
 
@@ -98,6 +100,14 @@ impl<'cmpl> VM<'cmpl> {
         }
         self.sp -= 1;
         self.stack.get(self.sp).map(|x| x.borrow())
+    }
+
+    pub fn pop_mut(&mut self) -> Option<&mut Object> {
+        if self.sp == 0 {
+            return None;
+        }
+        self.sp -= 1;
+        self.stack.get_mut(self.sp).map(|x| x.to_mut())
     }
 
     /// Use raw pointers to get two multiple objects of the stack without cloning
@@ -303,9 +313,16 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
             }
             OpCode::Call => {
                 let fun = vm.stack_top().unwrap();
-                if let Object::CompiledFunction(instr) = fun {
+                if let Object::CompiledFunction {
+                    instructions,
+                    n_locals,
+                } = fun
+                {
                     // TODO: borrow instructions. Lifetime mess.
-                    let frame = Frame::new(instr.clone());
+                    // TODO: Swap instructions w/ null instructions constant.
+                    let frame = Frame::new(instructions.clone(), vm.sp);
+                    // leave space on the stack for local bindings
+                    vm.sp = frame.base_pointer + *n_locals;
                     vm.push_frame(frame);
                     // don't increment the instruction pointer this loop.
                     continue;
@@ -317,16 +334,48 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                 // TODO: Maybe use pop_and_own, but then last_popped does not work
                 let return_value = vm.pop().expect(EMPTY_STACK).clone();
                 // leave function scope
-                vm.pop_frame();
-                // pop just executed compiled function from the stack.
-                vm.pop();
+                let base_pointer = {
+                    let frame = vm.pop_frame();
+                    frame.base_pointer
+                };
+                vm.sp = base_pointer - 1;
 
                 vm.push(Cow::from(return_value));
             }
             OpCode::Return => {
-                vm.pop_frame();
-                vm.pop();
+                let base_pointer = {
+                    let frame = vm.pop_frame();
+                    frame.base_pointer
+                };
+                vm.sp = base_pointer - 1;
                 vm.push(COW_NULL);
+            }
+            OpCode::SetLocal => {
+                // Get index of local variable
+                let (index, width) = oc.read_operand(&vm.current_instructions()[i + 1..]);
+
+                // Keep track of the current position in the stack
+                let base_pointer = {
+                    let frame = vm.current_frame();
+                    frame.ip += width;
+                    frame.base_pointer
+                };
+
+                // Do a manual stack pop and swap the popped value w/ local binding
+                vm.sp -= 1;
+                vm.stack.swap(base_pointer + index, vm.sp);
+            }
+            OpCode::GetLocal => {
+                // Get index of local variable
+                let (index, width) = oc.read_operand(&vm.current_instructions()[i + 1..]);
+                let base_pointer = {
+                    let frame = vm.current_frame();
+                    frame.ip += width;
+                    frame.base_pointer
+                };
+                // Todo: benchmark clone
+                let local = vm.stack.get(base_pointer + index).unwrap();
+                vm.push(local.clone());
             }
             _ => panic!(format!("not impl {:?}", oc)),
         }

@@ -226,10 +226,13 @@ fn test_fn_explicit_and_implicit_return() {
             &[
                 Object::Int(5),
                 Object::Int(10),
-                Object::CompiledFunction(make_instructions(
-                    &[Constant, Constant, Add, ReturnVal],
-                    &[&[0], &[1], &[], &[]],
-                )),
+                Object::CompiledFunction {
+                    instructions: make_instructions(
+                        &[Constant, Constant, Add, ReturnVal],
+                        &[&[0], &[1], &[], &[]],
+                    ),
+                    n_locals: 0,
+                },
             ],
         );
     }
@@ -240,10 +243,10 @@ fn test_fn_no_return() {
     let input = "fn() {}";
     assert_constant_literals(
         &input,
-        &[Object::CompiledFunction(make_instructions_tpl(&[(
-            OpCode::Return,
-            None,
-        )]))],
+        &[Object::CompiledFunction {
+            instructions: make_instructions_tpl(&[(OpCode::Return, None)]),
+            n_locals: 0,
+        }],
     );
     assert_equal_instr(&input, &[Constant, Pop], &[&[0], &[]])
 }
@@ -270,10 +273,13 @@ fn() { num }";
         &input,
         &[
             Object::Int(55),
-            Object::CompiledFunction(make_instructions_tpl(&[
-                (GetGlobal, Some(0)),
-                (ReturnVal, None),
-            ])),
+            Object::CompiledFunction {
+                instructions: make_instructions_tpl(&[
+                    (GetGlobal, Some(0)),
+                    (ReturnVal, None),
+                ]),
+                n_locals: 0,
+            },
         ],
     );
     assert_equal_instr(
@@ -291,12 +297,15 @@ num
         &input,
         &[
             Object::Int(55),
-            Object::CompiledFunction(make_instructions_tpl(&[
-                (Constant, Some(0)),
-                (SetLocal, Some(0)),
-                (GetLocal, Some(0)),
-                (ReturnVal, None),
-            ])),
+            Object::CompiledFunction {
+                instructions: make_instructions_tpl(&[
+                    (Constant, Some(0)),
+                    (SetLocal, Some(0)),
+                    (GetLocal, Some(0)),
+                    (ReturnVal, None),
+                ]),
+                n_locals: 1,
+            },
         ],
     );
     assert_equal_instr(&input, &[Constant, Pop], &[&[1], &[]])

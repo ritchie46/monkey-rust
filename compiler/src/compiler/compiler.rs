@@ -252,8 +252,12 @@ impl Compiler {
                 else if !self.last_instruction_eq(OpCode::ReturnVal) {
                     self.emit(OpCode::Return, &[]);
                 }
+                let n_locals = self.get_symbol_table().num_definitions;
                 let instructions = self.leave_scope();
-                let compiled_fn = Object::CompiledFunction(instructions);
+                let compiled_fn = Object::CompiledFunction {
+                    instructions,
+                    n_locals,
+                };
                 let pos = self.add_constant(compiled_fn);
                 self.emit(OpCode::Constant, &[pos]);
             }

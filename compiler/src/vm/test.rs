@@ -181,3 +181,47 @@ noReturnTwo();",
         assert_eq!(compile_and_run_vm(&input), *output)
     }
 }
+
+#[test]
+fn test_fn_with_bindings() {
+    let inout = &[
+        (
+            "let one = fn() { let one = 1; one };
+one();",
+            1,
+        ),
+        (
+            "let oneAndTwo = fn() { let one = 1; let two = 2; one + two; };
+oneAndTwo();",
+            3,
+        ),
+        (
+            "let oneAndTwo = fn() { let one = 1; let two = 2; one + two; };
+let threeAndFour = fn() { let three = 3; let four = 4; three + four; };
+oneAndTwo() + threeAndFour();",
+            10,
+        ),
+        (
+            "let globalSeed = 50;
+let minusOne = fn() {
+let num = 1;
+globalSeed - num;
+}
+let minusTwo = fn() {
+let num = 2;
+globalSeed - num;
+}
+minusOne() + minusTwo();",
+            97,
+        ),
+        (
+            "let firstFoobar = fn() { let foobar = 50; foobar; };
+let secondFoobar = fn() { let foobar = 100; foobar; };
+firstFoobar() + secondFoobar();",
+            150,
+        ),
+    ];
+    for (input, output) in inout {
+        assert_eq!(compile_and_run_vm(&input), Object::from(*output))
+    }
+}
