@@ -19,3 +19,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "bench"
 path = "src/bench/main.rs"
+
+[[bin]]
+name = "fib"
+path = "src/fib/main.rs"

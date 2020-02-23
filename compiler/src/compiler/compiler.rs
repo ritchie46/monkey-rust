@@ -99,9 +99,9 @@ impl Compiler {
                 }
             }
             Statement::Let(identifier, expr) => {
-                self.compile_expr(expr);
                 let smbl = self.get_symbol_table_mut().define(identifier.to_string());
 
+                self.compile_expr(expr);
                 let index = smbl.index;
                 match smbl.scope {
                     Scope::Global => self.emit(OpCode::SetGlobal, &[index]),

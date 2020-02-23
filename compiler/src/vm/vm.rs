@@ -314,8 +314,14 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
             OpCode::Call => {
                 let (n_args, width) =
                     oc.read_operand(&vm.current_instructions()[i + 1..]);
-                vm.current_frame().ip += 1;
-                let fun = vm.stack_top().unwrap();
+                vm.current_frame().ip += width;
+
+                let fun = vm
+                    .stack
+                    .get(vm.sp - 1 - n_args)
+                    .map(|x| x.borrow())
+                    .unwrap();
+
                 if let Object::CompiledFunction {
                     instructions,
                     n_locals,
@@ -323,7 +329,8 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                 {
                     // TODO: borrow instructions. Lifetime mess.
                     // TODO: Swap instructions w/ null instructions constant.
-                    let frame = Frame::new(instructions.clone(), vm.sp);
+                    let frame = Frame::new(instructions.clone(), vm.sp - n_args);
+
                     // leave space on the stack for local bindings
                     vm.sp = frame.base_pointer + *n_locals;
                     vm.push_frame(frame);

@@ -225,3 +225,43 @@ firstFoobar() + secondFoobar();",
         assert_eq!(compile_and_run_vm(&input), Object::from(*output))
     }
 }
+
+#[test]
+fn test_fn_with_args() {
+    let inout = &[
+        (
+            "let identity = fn(a) { a; };
+identity(4);",
+            4,
+        ),
+        (
+            "let sum = fn(a, b) { a + b; };
+sum(1, 2);",
+            3,
+        ),
+    ];
+    for (input, output) in inout {
+        assert_eq!(compile_and_run_vm(&input), Object::from(*output))
+    }
+}
+
+#[test]
+fn test_fn() {
+    let inout = &[(
+        "let fibonacci = fn(x) {
+              if (x == 0) {
+                0
+              } else {
+                if (x == 1) {
+                  return 1;
+                } else {
+                  fibonacci(x - 1) + fibonacci(x - 2);
+                }
+              }
+}; fibonacci(6)",
+        8,
+    )];
+    for (input, output) in inout {
+        assert_eq!(compile_and_run_vm(&input), Object::from(*output))
+    }
+}

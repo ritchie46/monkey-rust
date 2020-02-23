@@ -5,18 +5,19 @@ use std::cell::{Ref, RefCell};
 use std::collections::hash_map::Entry;
 use std::rc::Rc;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Scope {
     Global,
     Local,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Symbol {
     pub scope: Scope,
     pub index: usize,
 }
 
+#[derive(Debug)]
 pub struct SymbolTable {
     pub outer: Option<Rc<RefCell<SymbolTable>>>,
     store: HashMap<String, Symbol>,
