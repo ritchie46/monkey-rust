@@ -1,5 +1,5 @@
 use crate::code::{Instructions, OpCode, Operand};
-use crate::compiler::symbol_table::SymbolTable;
+use crate::compiler::symbol_table::{Scope, SymbolTable};
 use monkey::eval::object::Object;
 use monkey::parser::ast::{Expression, Statement};
 use std::cell::{Ref, RefCell, RefMut};
@@ -100,11 +100,13 @@ impl Compiler {
             }
             Statement::Let(identifier, expr) => {
                 self.compile_expr(expr);
-                let index = self
-                    .get_symbol_table_mut()
-                    .define(identifier.to_string())
-                    .index;
-                self.emit(OpCode::SetGlobal, &[index]);
+                let smbl = self.get_symbol_table_mut().define(identifier.to_string());
+
+                let index = smbl.index;
+                match smbl.scope {
+                    Scope::Global => self.emit(OpCode::SetGlobal, &[index]),
+                    Scope::Local => self.emit(OpCode::SetLocal, &[index]),
+                };
             }
             Statement::Return(expr) => {
                 self.compile_expr(expr);
@@ -222,7 +224,10 @@ impl Compiler {
                     None => panic!(format!("undefined variable: {}", ident)),
                     Some(smbl) => {
                         let index = smbl.index;
-                        self.emit(OpCode::GetGlobal, &[index]);
+                        match smbl.scope {
+                            Scope::Local => self.emit(OpCode::GetLocal, &[index]),
+                            Scope::Global => self.emit(OpCode::GetGlobal, &[index]),
+                        };
                     }
                 }
             }

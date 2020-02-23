@@ -6,14 +6,14 @@ use std::collections::hash_map::Entry;
 use std::rc::Rc;
 
 #[derive(Clone)]
-enum Scope {
+pub enum Scope {
     Global,
     Local,
 }
 
 #[derive(Clone)]
 pub struct Symbol {
-    scope: Scope,
+    pub scope: Scope,
     pub index: usize,
 }
 
@@ -43,7 +43,7 @@ impl SymbolTable {
     }
 
     pub fn define(&mut self, name: String) -> Symbol {
-        let mut scope;
+        let scope;
         if self.outer.is_none() {
             scope = Scope::Global;
         } else {
