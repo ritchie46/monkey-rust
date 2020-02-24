@@ -5,6 +5,7 @@ use monkey::eval::{evaluator::is_truthy, object::Object};
 use std::borrow::{Borrow, BorrowMut};
 use std::convert::TryFrom;
 use std::mem;
+use std::default::Default;
 use std::ptr::null;
 
 const STACKSIZE: usize = 2048;
@@ -14,6 +15,76 @@ const OBJECT_NULL: Object = Object::Null;
 const EMPTY_STACK: &'static str = "nothing on the stack";
 const GLOBAL_SIZE: usize = 65536;
 const MAX_FRAMES: usize = 1024;
+
+#[derive(Clone)]
+pub enum StackObject {
+    Owned(Object),
+    Const(*const Object),
+    Mut(*mut Object),
+    None,
+}
+
+impl Default for StackObject {
+    fn default() -> Self { StackObject::None }
+}
+
+impl StackObject {
+    fn as_mut(&mut self) -> &mut Object {
+        match self {
+            StackObject::Owned(o) => o,
+            StackObject::Mut(o) =>
+                unsafe { &mut **o }
+            ,
+            _ => panic!("cannot borrow as mutable")
+        }
+    }
+    fn as_ref(&self) -> &Object {
+        match self {
+            StackObject::Owned(o) => o,
+            StackObject::Mut(o) =>
+                unsafe { &**o }
+            ,
+            StackObject::Const(o) => unsafe { &**o },
+            StackObject::None => &OBJECT_NULL
+        }
+    }
+
+    fn take(&mut self) -> Object {
+        let so = mem::take(self);
+        match so {
+            StackObject::None => OBJECT_NULL,
+            StackObject::Owned(o) => o,
+            StackObject::Mut(o) => {
+                let a = unsafe { (*o).clone() };
+                a
+            }
+            StackObject::Const(o) => {
+                let a = unsafe { (*o).clone() };
+                a
+            }
+
+        }
+    }
+}
+
+impl From<Object> for StackObject {
+    fn from(obj: Object) -> StackObject {
+        StackObject::Owned(obj)
+    }
+}
+
+impl From<*mut Object> for StackObject {
+    fn from(obj: *mut Object) -> StackObject {
+        StackObject::Mut(obj)
+    }
+}
+
+impl From<*const Object> for StackObject {
+    fn from(obj: *const Object) -> StackObject {
+        StackObject::Const(obj)
+    }
+}
+
 
 #[derive(Clone)]
 pub struct Frame {
@@ -40,7 +111,7 @@ impl Frame {
 pub struct VM<'cmpl> {
     pub constants: &'cmpl [Object],
     // pub globals: Vec<Object>,
-    pub stack: Vec<Object>,
+    pub stack: Vec<StackObject>,
     pub sp: usize, // Stack Pointer: points to the next free registry on the stack
     pub frames: Vec<Frame>,
     pub frames_index: usize,
@@ -55,8 +126,7 @@ impl VM<'_> {
 
         VM {
             constants: bytecode.constants,
-
-            stack: vec![OBJECT_NULL; STACKSIZE],
+            stack: vec![OBJECT_NULL.into(); STACKSIZE],
             sp: 0,
             frames,
             frames_index: 1,
@@ -83,78 +153,65 @@ impl<'cmpl> VM<'cmpl> {
         self.frames.pop().unwrap()
     }
 
-    pub fn stack_top(&self) -> Option<&Object> {
-        if self.sp == 0 {
-            None
-        } else {
-            Some(&self.stack[self.sp - 1])
-        }
+    pub fn pop(&mut self) -> &Object {
+        self.sp -= 1;
+        self.stack[self.sp].as_ref()
     }
 
-    pub fn pop(&mut self) -> Option<&Object> {
-        if self.sp == 0 {
-            return None;
-        }
-        self.sp -= 1;
-        self.stack.get(self.sp)
+    pub fn pop_and_own(&mut self) -> Object {
+        self.sp -=1;
+        self.stack[self.sp].take()
     }
 
-    pub fn pop_mut(&mut self) -> Option<&mut Object> {
-        if self.sp == 0 {
-            return None;
-        }
+    pub fn pop_mut(&mut self) -> &mut Object {
         self.sp -= 1;
-        self.stack.get_mut(self.sp)
+        self.stack[self.sp].as_mut()
     }
 
     /// Use raw pointers to get two multiple objects of the stack without cloning
     /// Needs unsafe code to dereference.
-    pub fn pop_raw(&mut self) -> Option<*const Object> {
-        if self.sp == 0 {
-            return None;
-        }
-        let o = &self.stack[self.sp - 1] as *const Object;
+    pub fn pop_raw(&mut self) -> *const Object {
+        let o = self.stack[self.sp - 1].as_ref() as *const Object;
         self.sp -= 1;
-        Some(o)
+        o
     }
 
     /// Pop two references from the stack without cloning.
     /// The borrowck doesn't let use call self.pop twice wo/ a clone.
-    pub fn pop_2(&mut self) -> Option<(&Object, &Object)> {
-        if self.sp <= 1 {
-            return None;
-        }
+    pub fn pop_2(&mut self) -> (&Object, &Object) {
         // first right than left. Such that this function can be unpacked as left, right
         let two = unsafe {
-            let r = &*self.pop_raw().unwrap();
-            let l = &*self.pop_raw().unwrap();
+            let r = &*self.pop_raw();
+            let l = &*self.pop_raw();
             (l, r)
         };
-        Some(two)
+        two
     }
 
-    pub fn push(&mut self, o: Object) -> Result<(), VMError> {
-        if self.sp >= STACKSIZE {
-            return Err(VMError::StackOverflow);
-        }
-        self.stack[self.sp] = o;
+    pub fn push(&mut self, o: Object) {
+        self.stack[self.sp] = o.into();
         self.sp += 1;
-        Ok(())
     }
 
-    pub fn last_popped(&self) -> &Object {
-        &self.stack[self.sp]
+    pub fn push_so(&mut self, o: StackObject) {
+        self.stack[self.sp] = o;
+        self.sp +=1 ;
     }
 
-    fn build_array(&self, start_index: usize, end_index: usize) -> Object {
-        let mut elements = Vec::with_capacity(end_index - start_index);
-
-        for i in start_index..end_index {
-            let el = self.stack[i].clone();
-            elements.push(el)
-        }
-        Object::new_array(elements)
+    pub fn last_popped(&mut self) -> &Object {
+        let obj = self.stack[self.sp].as_ref();
+        obj
     }
+
+    // fn build_array(&self, start_index: usize, end_index: usize) -> Object {
+    //     let mut elements = Vec::with_capacity(end_index - start_index);
+    //
+    //     for i in start_index..end_index {
+    //         let el = self.stack[i].clone();
+    //         elements.push(el)
+    //     }
+    //     Object::new_array(elements)
+    // }
 }
 
 fn binary_operation(l: i64, r: i64, op: OpCode) -> Object {
@@ -235,13 +292,14 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                 let (const_index, width) =
                     oc.read_operand(&vm.current_instructions()[i + 1..]);
                 vm.current_frame().ip += width;
-                let r = vm.push(vm.constants[const_index].clone())?;
+                let o = &vm.constants[const_index] as *const Object;
+                vm.push_so(o.into() );
             }
             OpCode::Pop => {
                 vm.pop();
             }
             OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Div => {
-                let (left, right) = vm.pop_2().expect(EMPTY_STACK);
+                let (left, right) = vm.pop_2();
                 let result = match (left, right) {
                     (Object::Int(l), Object::Int(r)) => binary_operation(*l, *r, oc),
                     (Object::String(l), Object::String(r)) => string_infix(l, r, oc),
@@ -258,14 +316,14 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
             OpCode::Equal | OpCode::NotEqual | OpCode::GT => {
                 let result = {
                     // left and right should be dropped before getting 2nd mutable borrow.
-                    let (left, right) = vm.pop_2().expect(EMPTY_STACK);
+                    let (left, right) = vm.pop_2();
                     exec_cmp(left, right, oc)
                 };
                 vm.push(result);
             }
             OpCode::Minus | OpCode::Bang => {
                 let result = {
-                    let right = vm.pop().expect(EMPTY_STACK);
+                    let right = vm.pop();
                     exec_prefix(right, oc)
                 };
                 vm.push(result);
@@ -276,7 +334,7 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                 vm.current_frame().ip = jump_pos - 1;
             }
             OpCode::JumpNotTruthy => {
-                let condition = vm.pop().expect(EMPTY_STACK);
+                let condition = vm.pop();
                 if !is_truthy(condition) {
                     let (jump_pos, width) =
                         oc.read_operand(&vm.current_instructions()[i + 1..]);
@@ -293,7 +351,7 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
             OpCode::SetGlobal => {
                 let (index, width) = oc.read_operand(&vm.current_instructions()[i + 1..]);
                 vm.current_frame().ip += width;
-                globals[index] = vm.pop().expect(EMPTY_STACK).clone();
+                globals[index] = vm.pop_and_own();
             }
             OpCode::GetGlobal => {
                 let (index, width) = oc.read_operand(&vm.current_instructions()[i + 1..]);
@@ -305,8 +363,8 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                 let (n_elements, width) =
                     oc.read_operand(&vm.current_instructions()[i + 1..]);
                 vm.current_frame().ip += width;
-                let array = vm.build_array(vm.sp - n_elements, vm.sp);
-                vm.push(array);
+                // let array = vm.build_array(vm.sp - n_elements, vm.sp);
+                // vm.push(array);
             }
             OpCode::Call => {
                 let (n_args, width) =
@@ -316,8 +374,9 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                 // We can replace the location on the stack because we know the function
                 // get's popped off after execution
                 let tmp = vm.stack.get_mut(vm.sp - 1 - n_args).unwrap();
-                let mut fun = mem::replace(tmp, OBJECT_NULL);
-                let fun = fun;
+                let mut fun = mem::replace(tmp, OBJECT_NULL.into());
+                let fun = fun.as_mut();
+                let fun = mem::replace(fun, OBJECT_NULL);
 
                 if let Object::CompiledFunction {
                     instructions,
@@ -384,8 +443,8 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                     frame.base_pointer
                 };
                 // Todo: benchmark clone
-                let local = vm.stack.get(base_pointer + index).unwrap();
-                vm.push(local.clone());
+                let local = vm.stack[base_pointer + index].as_ref() as *const Object;
+                vm.push_so(local.into());
             }
             _ => panic!(format!("not impl {:?}", oc)),
         }
