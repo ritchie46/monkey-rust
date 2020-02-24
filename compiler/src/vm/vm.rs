@@ -286,7 +286,7 @@ fn string_infix(left: &str, right: &str, oc: OpCode) -> Object {
 
 pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
     let mut vm = VM::new(bc);
-    let mut globals = vec![OBJECT_NULL; GLOBAL_SIZE];
+    let mut globals: Vec<StackObject> = vec![OBJECT_NULL.into(); GLOBAL_SIZE];
 
     while vm.current_frame().ip < vm.current_frame().instructions().len() {
         let i = vm.current_frame().ip;
@@ -355,12 +355,13 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
             OpCode::SetGlobal => {
                 let (index, width) = oc.read_operand(&vm.current_instructions()[i + 1..]);
                 vm.current_frame().ip += width;
-                globals[index] = vm.pop_and_own();
+                let o = vm.pop_and_own();
+                globals[index] = o.into();
             }
             OpCode::GetGlobal => {
                 let (index, width) = oc.read_operand(&vm.current_instructions()[i + 1..]);
                 vm.current_frame().ip += width;
-                let global = &globals[index] as *const Object;
+                let global = globals[index].as_ref() as *const Object;
                 vm.push_so(global.into());
             }
             OpCode::Array => {
