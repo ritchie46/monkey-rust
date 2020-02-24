@@ -62,7 +62,6 @@ impl StackObject {
                 let a = unsafe { (*o).clone() };
                 a
             }
-
         }
     }
 }
@@ -158,6 +157,11 @@ impl<'cmpl> VM<'cmpl> {
         self.stack[self.sp].as_ref()
     }
 
+    pub fn pop_so(&mut self) -> &StackObject {
+        self.sp -= 1;
+        &self.stack[self.sp]
+    }
+
     pub fn pop_and_own(&mut self) -> Object {
         self.sp -=1;
         self.stack[self.sp].take()
@@ -195,11 +199,11 @@ impl<'cmpl> VM<'cmpl> {
 
     pub fn push_so(&mut self, o: StackObject) {
         self.stack[self.sp] = o;
-        self.sp +=1 ;
+        self.sp += 1;
     }
 
-    pub fn last_popped(&mut self) -> &Object {
-        let obj = self.stack[self.sp].as_ref();
+    pub fn last_popped(&mut self) -> Object {
+        let obj = self.stack[self.sp].take();
         obj
     }
 
@@ -445,5 +449,5 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
         }
         vm.current_frame().ip += 1;
     }
-    Ok(vm.last_popped().clone())
+    Ok(vm.last_popped())
 }
