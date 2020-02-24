@@ -356,8 +356,8 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
             OpCode::GetGlobal => {
                 let (index, width) = oc.read_operand(&vm.current_instructions()[i + 1..]);
                 vm.current_frame().ip += width;
-                let global = globals[index].clone();
-                vm.push(global);
+                let global = &globals[index] as *const Object;
+                vm.push_so(global.into());
             }
             OpCode::Array => {
                 let (n_elements, width) =
@@ -373,10 +373,7 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
 
                 // We can replace the location on the stack because we know the function
                 // get's popped off after execution
-                let tmp = vm.stack.get_mut(vm.sp - 1 - n_args).unwrap();
-                let mut fun = mem::replace(tmp, OBJECT_NULL.into());
-                let fun = fun.as_mut();
-                let fun = mem::replace(fun, OBJECT_NULL);
+                let fun = vm.stack[vm.sp -1 - n_args].take();
 
                 if let Object::CompiledFunction {
                     instructions,
@@ -430,9 +427,8 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                     frame.base_pointer
                 };
 
-                // Do a manual stack pop and swap the popped value w/ local binding
-                vm.sp -= 1;
-                vm.stack.swap(base_pointer + index, vm.sp);
+                let local = vm.pop() as *const Object;
+                vm.stack[base_pointer + index] = local.into();
             }
             OpCode::GetLocal => {
                 // Get index of local variable
@@ -442,7 +438,6 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                     frame.ip += width;
                     frame.base_pointer
                 };
-                // Todo: benchmark clone
                 let local = vm.stack[base_pointer + index].as_ref() as *const Object;
                 vm.push_so(local.into());
             }
