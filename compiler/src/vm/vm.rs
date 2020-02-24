@@ -336,8 +336,10 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                 }
             }
             OpCode::ReturnVal => {
-                // TODO: Maybe use pop_and_own, but then last_popped does not work
-                let return_value = vm.pop().expect(EMPTY_STACK).clone();
+                vm.pop();
+                // We pop and keep the index. This is the returned value. We will swap this
+                // with the top of the stack
+                let return_index = vm.sp;
                 // leave function scope
                 let base_pointer = {
                     let frame = vm.pop_frame();
@@ -345,7 +347,10 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                 };
                 vm.sp = base_pointer - 1;
 
-                vm.push(return_value);
+                // manual push
+                vm.sp += 1;
+
+                vm.stack.swap(return_index, vm.sp - 1);
             }
             OpCode::Return => {
                 let base_pointer = {
