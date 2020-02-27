@@ -2,11 +2,14 @@ use crate::code::{read_be_u16, OpCode, Operand};
 use crate::compiler::compiler::Bytecode;
 use crate::err::VMError;
 use monkey::eval::{evaluator::is_truthy, object::Object};
+use once_cell::sync::Lazy;
+use std::alloc::{alloc, dealloc, Layout};
 use std::borrow::{Borrow, BorrowMut};
 use std::convert::TryFrom;
-use std::mem;
 use std::default::Default;
-use std::ptr::null;
+use std::mem;
+use std::ptr;
+use std::sync::Mutex;
 
 const STACKSIZE: usize = 2048;
 const OBJECT_TRUE: Object = Object::Bool(true);
@@ -16,50 +19,98 @@ const EMPTY_STACK: &'static str = "nothing on the stack";
 const GLOBAL_SIZE: usize = 65536;
 const MAX_FRAMES: usize = 1024;
 
+const CACHE_SIZE: usize = 10;
+
+static MEMCACHE: Lazy<Mutex<Vec<usize>>> =
+    Lazy::new(|| Mutex::new(Vec::with_capacity(CACHE_SIZE)));
+
 #[derive(Clone)]
 pub enum StackObject {
     Owned(Object),
     Const(*const Object),
     Mut(*mut Object),
+    Cached(*mut Object),
     None,
 }
 
 impl Default for StackObject {
-    fn default() -> Self { StackObject::None }
+    fn default() -> Self {
+        StackObject::None
+    }
+}
+
+impl Drop for StackObject {
+    fn drop(&mut self) {
+        match self {
+            StackObject::Cached(ptr_) => {
+                let layout = Layout::new::<Object>();
+                let ptr_ = *ptr_ as *mut u8;
+
+                let mut memcache = MEMCACHE.lock().unwrap();
+                if memcache.len() < CACHE_SIZE {
+                    let ptr_: usize = unsafe { mem::transmute(ptr_) };
+
+                    memcache.push(ptr_)
+                } else {
+                    unsafe { dealloc(ptr_, layout) }
+                }
+            }
+            _ => (),
+        }
+    }
+}
+
+fn new_int(v: i64) -> StackObject {
+    let mut opt = MEMCACHE.lock().unwrap().pop();
+
+    let ptr_ = match opt {
+        None => {
+            let layout = Layout::new::<Object>();
+            unsafe { alloc(layout) }
+        }
+        Some(ptr_) => ptr_ as *mut u8,
+    };
+
+    let ptr_ = ptr_ as *mut Object;
+    unsafe {
+        *ptr_ = Object::Int(v);
+        return StackObject::Cached(ptr_);
+    };
 }
 
 impl StackObject {
     fn as_mut(&mut self) -> &mut Object {
         match self {
             StackObject::Owned(o) => o,
-            StackObject::Mut(o) =>
-                unsafe { &mut **o }
-            ,
-            _ => panic!("cannot borrow as mutable")
+            StackObject::Mut(o) => unsafe { &mut **o },
+            _ => panic!("cannot borrow as mutable"),
         }
     }
     fn as_ref(&self) -> &Object {
         match self {
             StackObject::Owned(o) => o,
-            StackObject::Mut(o) =>
-                unsafe { &**o }
-            ,
+            StackObject::Mut(o) => unsafe { &**o },
+            StackObject::Cached(o) => unsafe { &**o },
             StackObject::Const(o) => unsafe { &**o },
-            StackObject::None => &OBJECT_NULL
+            StackObject::None => &OBJECT_NULL,
         }
     }
 
     fn take(&mut self) -> Object {
-        let so = mem::take(self);
-        match so {
+        let mut so = mem::take(self);
+        match &mut so {
             StackObject::None => OBJECT_NULL,
-            StackObject::Owned(o) => o,
+            StackObject::Owned(o) => mem::take(o),
             StackObject::Mut(o) => {
-                let a = unsafe { (*o).clone() };
+                let a = unsafe { (**o).clone() };
+                a
+            }
+            StackObject::Cached(o) => {
+                let a = unsafe { (**o).clone() };
                 a
             }
             StackObject::Const(o) => {
-                let a = unsafe { (*o).clone() };
+                let a = unsafe { (**o).clone() };
                 a
             }
         }
@@ -83,7 +134,6 @@ impl From<*const Object> for StackObject {
         StackObject::Const(obj)
     }
 }
-
 
 #[derive(Clone)]
 pub struct Frame {
@@ -163,7 +213,7 @@ impl<'cmpl> VM<'cmpl> {
     }
 
     pub fn pop_and_own(&mut self) -> Object {
-        self.sp -=1;
+        self.sp -= 1;
         self.stack[self.sp].take()
     }
 
@@ -218,14 +268,15 @@ impl<'cmpl> VM<'cmpl> {
     // }
 }
 
-fn binary_operation(l: i64, r: i64, op: OpCode) -> Object {
-    match op {
-        OpCode::Add => Object::Int(l + r),
-        OpCode::Sub => Object::Int(l - r),
-        OpCode::Mul => Object::Int(l * r),
-        OpCode::Div => Object::Int(l / r),
+fn binary_operation(l: i64, r: i64, op: OpCode) -> StackObject {
+    let v = match op {
+        OpCode::Add => l + r,
+        OpCode::Sub => l - r,
+        OpCode::Mul => l * r,
+        OpCode::Div => l / r,
         _ => panic!("not impl"),
-    }
+    };
+    new_int(v)
 }
 
 fn exec_cmp(left: &Object, right: &Object, op: OpCode) -> Object {
@@ -277,11 +328,12 @@ fn exec_prefix(right: &Object, oc: OpCode) -> Object {
     }
 }
 
-fn string_infix(left: &str, right: &str, oc: OpCode) -> Object {
-    match oc {
+fn string_infix(left: &str, right: &str, oc: OpCode) -> StackObject {
+    let v = match oc {
         OpCode::Add => Object::String(format!("{}{}", left, right)),
         _ => Object::Error(format!("operand {:?} not support on string", oc)),
-    }
+    };
+    StackObject::Owned(v)
 }
 
 pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
@@ -297,7 +349,7 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                     oc.read_operand(&vm.current_instructions()[i + 1..]);
                 vm.current_frame().ip += width;
                 let o = &vm.constants[const_index] as *const Object;
-                vm.push_so(o.into() );
+                vm.push_so(o.into());
             }
             OpCode::Pop => {
                 vm.pop();
@@ -309,7 +361,7 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
                     (Object::String(l), Object::String(r)) => string_infix(l, r, oc),
                     _ => panic!("not impl"),
                 };
-                vm.push(result);
+                vm.push_so(result);
             }
             OpCode::True => {
                 vm.push(OBJECT_TRUE);
@@ -355,7 +407,9 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
             OpCode::SetGlobal => {
                 let (index, width) = oc.read_operand(&vm.current_instructions()[i + 1..]);
                 vm.current_frame().ip += width;
-                let o = vm.pop_and_own();
+                // let o = vm.pop_and_own();
+                // globals[index] = o.into();
+                let o = vm.pop() as *const Object;
                 globals[index] = o.into();
             }
             OpCode::GetGlobal => {
@@ -378,7 +432,7 @@ pub fn run_vm(bc: &Bytecode) -> Result<Object, VMError> {
 
                 // We can replace the location on the stack because we know the function
                 // get's popped off after execution
-                let fun = vm.stack[vm.sp -1 - n_args].take();
+                let fun = vm.stack[vm.sp - 1 - n_args].take();
 
                 if let Object::CompiledFunction {
                     instructions,

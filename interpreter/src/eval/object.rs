@@ -35,6 +35,12 @@ pub enum Object {
     Ignore,
 }
 
+impl Default for Object {
+    fn default() -> Self {
+        Object::Null
+    }
+}
+
 impl PartialEq<Object> for Object {
     fn eq(&self, other: &Object) -> bool {
         match (self, other) {
