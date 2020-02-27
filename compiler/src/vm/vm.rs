@@ -2,7 +2,6 @@ use crate::code::{read_be_u16, OpCode, Operand};
 use crate::compiler::compiler::Bytecode;
 use crate::err::VMError;
 use monkey::eval::{evaluator::is_truthy, object::Object};
-use once_cell::sync::Lazy;
 use std::alloc::{alloc, dealloc, Layout};
 use std::borrow::{Borrow, BorrowMut};
 use std::convert::TryFrom;
@@ -21,8 +20,10 @@ const MAX_FRAMES: usize = 1024;
 
 const CACHE_SIZE: usize = 10;
 
-static MEMCACHE: Lazy<Mutex<Vec<usize>>> =
-    Lazy::new(|| Mutex::new(Vec::with_capacity(CACHE_SIZE)));
+lazy_static! {
+    pub static ref MEMCACHE: Mutex<Vec<usize>> =
+        Mutex::new(Vec::with_capacity(CACHE_SIZE));
+}
 
 #[derive(Clone)]
 pub enum StackObject {
