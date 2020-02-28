@@ -20,10 +20,7 @@ const MAX_FRAMES: usize = 1024;
 
 const CACHE_SIZE: usize = 10;
 
-lazy_static! {
-    pub static ref MEMCACHE: Mutex<Vec<usize>> =
-        Mutex::new(Vec::with_capacity(CACHE_SIZE));
-}
+static mut MEMCACHE: Option<Vec<usize>> = None;
 
 #[derive(Clone)]
 pub enum StackObject {
@@ -47,10 +44,14 @@ impl Drop for StackObject {
                 let layout = Layout::new::<Object>();
                 let ptr_ = *ptr_ as *mut u8;
 
-                let mut memcache = MEMCACHE.lock().unwrap();
+                let mut memcache = unsafe {
+                    match MEMCACHE {
+                        Some(ref mut v) => v,
+                        _ => panic!("Forgot to set Option"),
+                    }
+                };
                 if memcache.len() < CACHE_SIZE {
                     let ptr_: usize = unsafe { mem::transmute(ptr_) };
-
                     memcache.push(ptr_)
                 } else {
                     unsafe { dealloc(ptr_, layout) }
@@ -62,7 +63,12 @@ impl Drop for StackObject {
 }
 
 fn new_int(v: i64) -> StackObject {
-    let mut opt = MEMCACHE.lock().unwrap().pop();
+    let mut opt = unsafe {
+        match MEMCACHE {
+            Some(ref mut v) => v.pop(),
+            _ => panic!(),
+        }
+    };
 
     let ptr_ = match opt {
         None => {
@@ -169,6 +175,8 @@ pub struct VM<'cmpl> {
 
 impl VM<'_> {
     pub fn new<'cmpl>(bytecode: &'cmpl Bytecode) -> VM<'cmpl> {
+        unsafe { MEMCACHE = Some(Vec::with_capacity(10)) }
+
         let main_instructions = bytecode.instructions.to_vec();
         let main_frame = Frame::new(main_instructions, 0);
         let mut frames = Vec::with_capacity(MAX_FRAMES);
