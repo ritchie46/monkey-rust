@@ -20,5 +20,5 @@ fn main() {
 
     let now = Instant::now();
     run_vm(&bytecode);
-    println!("{}", now.elapsed().as_millis());
+    println!("{} seconds", now.elapsed().as_secs_f32());
 }

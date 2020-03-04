@@ -4,3 +4,9 @@ members = [
     "interpreter",
     "compiler"
 ]
+
+[profile.release]
+codegen-units = 1
+target-cpu = "native"
+panic = "abort"
+lto = "fat"
